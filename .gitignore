@@ -1,0 +1,12 @@
+node_modules/
+dist/
+knowledge/.index.json
+test-results/
+playwright-report/
+*.tsbuildinfo
+.env.local
+.env*.local
+
+# Personal, machine-local Claude Code settings. Can capture secrets from
+# approved commands, so it must never be committed.
+.claude/settings.local.json

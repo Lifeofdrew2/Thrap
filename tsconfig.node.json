@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    // Emit away from the repo root: a generated vite.config.js would be loaded
+    // by Vite in preference to vite.config.ts and silently shadow the server.
+    "outDir": "node_modules/.tmp/node-build"
+  },
+  "include": [
+    "vite.config.ts",
+    "playwright.config.ts",
+    "src/therapy-prompt.ts",
+    "src/api/types.ts",
+    "src/rag/**/*.ts"
+  ]
+}
