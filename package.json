@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && npm run build:server",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "lint": "tsc -b --pretty false"
+    "lint": "tsc -b --pretty false",
+    "build:server": "vite build --ssr src/server/index.ts --outDir dist-server",
+    "start": "node dist-server/index.js"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.0",
@@ -30,5 +32,8 @@
     "typescript": "~5.6.3",
     "vite": "^6.1.0",
     "vitest": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

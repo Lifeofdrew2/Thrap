@@ -17,6 +17,7 @@
     "playwright.config.ts",
     "src/therapy-prompt.ts",
     "src/api/types.ts",
-    "src/rag/**/*.ts"
+    "src/rag/**/*.ts",
+    "src/server/**/*.ts"
   ]
 }

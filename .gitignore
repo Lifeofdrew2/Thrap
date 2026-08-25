@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-server/
 knowledge/.index.json
 test-results/
 playwright-report/
