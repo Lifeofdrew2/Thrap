@@ -1,4 +1,7 @@
+import { useEffect, useRef, useState } from "react";
 import type { Citation, TurnState } from "../api/types";
+import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
+import { useSpeechSynthesis } from "../hooks/useSpeechSynthesis";
 
 export interface ConversationMessage {
   id: string;
@@ -29,14 +32,61 @@ interface ConversationViewProps {
 export function ConversationView({ messages, turn, onSubmit, onShortcut, disabled, isTyping }: ConversationViewProps) {
   const remaining = Math.max(turn.limit - turn.used, 0);
 
+  const [draft, setDraft] = useState("");
+  const [readAloud, setReadAloud] = useState(false);
+
+  const speech = useSpeechRecognition();
+  const voice = useSpeechSynthesis();
+  const listening = speech.status === "listening";
+
+  // Text already in the composer when dictation began, so speech appends to it
+  // rather than replacing what the person typed.
+  const baseDraft = useRef("");
+
+  // Dictated words land in the composer for the person to read and edit. The
+  // message is only ever sent by an explicit press, so a mis-transcription is
+  // visible and correctable before it reaches the service.
+  useEffect(() => {
+    if (speech.transcript) setDraft(`${baseDraft.current}${speech.transcript}`);
+  }, [speech.transcript]);
+
+  // Read the newest service reply when the person has asked for it.
+  const lastSpokenId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!readAloud) return;
+    const latest = [...messages].reverse().find((message) => message.author === "service");
+    if (!latest || latest.id === lastSpokenId.current) return;
+    lastSpokenId.current = latest.id;
+    voice.speak(latest.text);
+  }, [messages, readAloud, voice]);
+
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = event.currentTarget;
-    const input = form.elements.namedItem("message");
-    if (input instanceof HTMLInputElement && input.value.trim()) {
-      onSubmit(input.value.trim());
-      form.reset();
+    const text = draft.trim();
+    if (!text) return;
+
+    speech.stop();
+    speech.reset();
+    setDraft("");
+    onSubmit(text);
+  }
+
+  function toggleListening() {
+    if (listening) {
+      speech.stop();
+      return;
     }
+    // Anchor to what is already typed so dictation continues from it.
+    baseDraft.current = draft.trim() ? `${draft.trim()} ` : "";
+    speech.reset();
+    speech.start();
+  }
+
+  function toggleReadAloud() {
+    setReadAloud((current) => {
+      if (current) voice.cancel();
+      return !current;
+    });
   }
 
   return (
@@ -132,15 +182,67 @@ export function ConversationView({ messages, turn, onSubmit, onShortcut, disable
               maxLength={1000}
               disabled={disabled}
               autoComplete="off"
-              placeholder="Type here…"
+              placeholder={listening ? "Listening…" : "Type or use the microphone…"}
+              value={listening && speech.interim ? `${draft}${speech.interim}` : draft}
+              onChange={(event) => {
+                setDraft(event.target.value);
+                baseDraft.current = event.target.value;
+              }}
             />
-            <button className="send-button" type="submit" disabled={disabled} aria-label="Send message">
+
+            {speech.status !== "unsupported" && (
+              <button
+                className={`mic-button${listening ? " mic-button--live" : ""}`}
+                type="button"
+                onClick={toggleListening}
+                disabled={disabled}
+                aria-pressed={listening}
+                aria-label={listening ? "Stop dictating" : "Dictate your message"}
+              >
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <rect x="7.25" y="2.5" width="5.5" height="9.5" rx="2.75" stroke="currentColor" strokeWidth="1.75"/>
+                  <path d="M4.5 9.25a5.5 5.5 0 0 0 11 0M10 14.75v2.75" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/>
+                </svg>
+              </button>
+            )}
+
+            <button className="send-button" type="submit" disabled={disabled || !draft.trim()} aria-label="Send message">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                 <path d="M3 10L17 10M17 10L11 4M17 10L11 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
           </div>
-          <p className="composer-hint">Not a crisis service. If you're in danger, contact emergency services.</p>
+
+          {/* Voice status is announced, never only shown, and never replaces the
+              send action: dictation always ends with the person pressing send. */}
+          <p className="voice-status" role="status" aria-live="polite" aria-label="Voice input status">
+            {speech.error
+              ? speech.error
+              : listening
+              ? "Listening. Your words appear above — check them, then send."
+              : ""}
+          </p>
+
+          <div className="composer-footer">
+            <p className="composer-hint">Not a crisis service. If you're in danger, contact emergency services.</p>
+            {voice.supported && (
+              <button
+                className="text-button text-button--sm"
+                type="button"
+                onClick={toggleReadAloud}
+                aria-pressed={readAloud}
+              >
+                {readAloud ? "Turn off read aloud" : "Read replies aloud"}
+              </button>
+            )}
+          </div>
+
+          {speech.status !== "unsupported" && (
+            <p className="voice-note">
+              Dictation uses your browser's speech service, which may send audio to your
+              browser provider. Type instead if you would rather it did not.
+            </p>
+          )}
         </form>
       </div>
     </main>
