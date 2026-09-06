@@ -19,6 +19,8 @@ const THERAPY_RESPONSES: Record<string, string> = {
     "Sleep struggles can affect everything — your mood, your focus, your resilience. You're right to take it seriously. Are you finding it hard to fall asleep, stay asleep, or do you wake up still feeling drained?",
   BOOK_COUNSELLOR:
     "Connecting with a licensed counsellor is a really positive step. I can help point you in the right direction. Would you like me to connect you with the EAP duty counsellor, or would you prefer to explore some information first?",
+  GRIEF:
+    "Loss can stay with you in many different ways, and you do not have to explain it perfectly here. Would you like to tell me a little about who or what you have lost?",
 };
 
 const FOLLOWUP_RESPONSES = [
@@ -28,6 +30,13 @@ const FOLLOWUP_RESPONSES = [
   "I appreciate you being so open. It sounds like there's a lot going on. When did you first notice things starting to feel this heavy?",
   "That makes a lot of sense given what you're going through. How are you taking care of yourself at the moment?",
   "It's okay to feel that way — your feelings are valid. Is there someone in your life you've been able to talk to about this, or has it felt hard to open up?",
+];
+
+const PIDGIN_RESPONSES = [
+  "E sound like stress dey weigh you down. Wetin dey happen wey dey make you feel this way?",
+  "Thank you say you share am with me. Which part of this matter dey press you pass right now?",
+  "I hear you. How this stress dey affect your sleep, work, or the people around you?",
+  "You no need carry everything alone. You get person wey you trust wey you fit talk to?",
 ];
 
 let callCount = 0;
@@ -45,14 +54,17 @@ export const handlers = [
   http.post("/api/navigate", async ({ request }) => {
     await delay(1200 + Math.random() * 600);
 
-    const body = await request.json() as { message?: string; intent?: string };
+    const body = await request.json() as { message?: string; intent?: string; region?: string; language?: string };
     const turn = { used: ++callCount, limit: 20 };
 
     // Shortcut intents get specific responses
     if (body.intent && body.intent in THERAPY_RESPONSES) {
+      const message = body.language === "pcm" && body.region === "NG"
+        ? PIDGIN_RESPONSES[0]
+        : THERAPY_RESPONSES[body.intent as keyof typeof THERAPY_RESPONSES];
       return HttpResponse.json({
         kind: "answer",
-        message: THERAPY_RESPONSES[body.intent as keyof typeof THERAPY_RESPONSES],
+        message,
         citations: [],
         turn,
       });
@@ -63,7 +75,9 @@ export const handlers = [
     const crisisSignals = [
       "kill myself", "end my life", "suicide", "want to die",
       "hurt myself", "self harm", "self-harm", "harming myself",
-      "don't want to be here", "not worth living",
+      "don't want to be here", "not worth living", "no reason to live", "can't go on",
+      "i wan die", "i want die", "make i die", "i no wan live", "life no worth am",
+      "i don tire for life", "everything don finish", "i go kill myself",
     ];
     if (crisisSignals.some((s) => text.includes(s))) {
       return HttpResponse.json({
@@ -85,7 +99,10 @@ export const handlers = [
     }
 
     // Conversational follow-up
-    const reply = FOLLOWUP_RESPONSES[turn.used % FOLLOWUP_RESPONSES.length];
+    const responses = body.language === "pcm" && body.region === "NG"
+      ? PIDGIN_RESPONSES
+      : FOLLOWUP_RESPONSES;
+    const reply = responses[turn.used % responses.length];
     return HttpResponse.json({
       kind: "answer",
       message: reply,

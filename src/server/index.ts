@@ -15,6 +15,7 @@ import {
   createSessionId,
   createThrapApi,
   getSession,
+  parseNavigationInput,
   type ApiResult,
 } from "./api";
 import { buildRetriever } from "./knowledge";
@@ -58,8 +59,8 @@ function readCookie(req: IncomingMessage, name: string): string | null {
  * Resolve the caller's session, issuing an id when there is none.
  *
  * The cookie is httpOnly and SameSite=Lax so it is unreadable from script and
- * not sent cross-site. `Secure` is set in production, where Render terminates
- * TLS; it is omitted locally so plain-HTTP development still works.
+ * not sent cross-site. `Secure` is set in production; it is omitted locally
+ * so plain-HTTP development still works.
  */
 function resolveSession(req: IncomingMessage, res: ServerResponse): string {
   const existing = readCookie(req, COOKIE_NAME);
@@ -169,8 +170,17 @@ const server = createServer(async (req, res) => {
         sendJson(res, api.humanRoute());
         return;
       }
+      if (urlPath === "/api/translate-ui") {
+        const body = await readJsonBody(req) as { languageName?: string; copy?: Record<string, unknown> };
+        sendJson(res, await api.translateUi({ languageName: body.languageName ?? "", copy: body.copy ?? {} }));
+        return;
+      }
       if (urlPath === "/api/navigate") {
-        const body = await readJsonBody(req) as { message?: string; intent?: string };
+        const body = parseNavigationInput(await readJsonBody(req));
+        if (!body) {
+          sendJson(res, { status: 400, body: { error: "invalid_request" } });
+          return;
+        }
         sendJson(res, await api.navigate(body, getSession(sessionId)));
         return;
       }

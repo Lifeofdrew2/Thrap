@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Citation, TurnState } from "../api/types";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { useSpeechSynthesis } from "../hooks/useSpeechSynthesis";
+import type { AppCopy } from "../app/i18n";
 
 export interface ConversationMessage {
   id: string;
@@ -15,6 +16,7 @@ const SHORTCUTS: { icon: string; label: string; desc: string; intent: string }[]
   { icon: "💬", label: "I need to talk",       desc: "Share what's on your mind",         intent: "TALK_THROUGH" },
   { icon: "😰", label: "Feeling anxious",       desc: "Explore anxiety and stress",        intent: "ANXIETY" },
   { icon: "😔", label: "Feeling low",           desc: "Talk about low mood or sadness",    intent: "LOW_MOOD" },
+  { icon: "🕯️", label: "Loss or grief",          desc: "Talk about someone or something you've lost", intent: "GRIEF" },
   { icon: "🔋", label: "Burnout & work stress", desc: "Workplace pressure and exhaustion", intent: "BURNOUT" },
   { icon: "😴", label: "Sleep & rest",          desc: "Trouble sleeping or recovering",    intent: "SLEEP" },
   { icon: "🤝", label: "Talk to a counsellor",  desc: "Connect with a professional now",   intent: "BOOK_COUNSELLOR" },
@@ -27,9 +29,10 @@ interface ConversationViewProps {
   onShortcut: (intent: string) => void;
   disabled: boolean;
   isTyping: boolean;
+  copy: AppCopy;
 }
 
-export function ConversationView({ messages, turn, onSubmit, onShortcut, disabled, isTyping }: ConversationViewProps) {
+export function ConversationView({ messages, turn, onSubmit, onShortcut, disabled, isTyping, copy }: ConversationViewProps) {
   const remaining = Math.max(turn.limit - turn.used, 0);
 
   const [draft, setDraft] = useState("");
@@ -93,19 +96,20 @@ export function ConversationView({ messages, turn, onSubmit, onShortcut, disable
     <main className="page-wrap conversation" aria-labelledby="conversation-heading">
       <div className="conversation-heading-row">
         <div>
-          <p className="eyebrow">Therapy support</p>
-          <h1 id="conversation-heading">How are you feeling today?</h1>
+          <p className="eyebrow">{copy.conversationEyebrow}</p>
+          <h1 id="conversation-heading">{copy.conversationHeading}</h1>
         </div>
         <span className="turn-status" role="status">
-          {remaining} {remaining === 1 ? "exchange" : "exchanges"} remaining
+          {remaining} {remaining === 1 ? copy.exchangeOne : copy.exchangeMany}
         </span>
       </div>
+      <p className="privacy-note processing-mode-note">{copy.anonymousModeNote}</p>
 
       {messages.length === 0 ? (
         <>
-          <p className="shortcut-intro">Choose a topic to begin, or type your own message below.</p>
+          <p className="shortcut-intro">{copy.shortcutIntro}</p>
           <div className="shortcut-grid" aria-label="Conversation starters">
-            {SHORTCUTS.map(({ icon, label, desc, intent }) => (
+            {SHORTCUTS.map(({ icon, intent }) => (
               <button
                 className="shortcut"
                 type="button"
@@ -114,8 +118,8 @@ export function ConversationView({ messages, turn, onSubmit, onShortcut, disable
                 disabled={disabled}
               >
                 <span className="shortcut-icon" aria-hidden="true">{icon}</span>
-                <span className="shortcut-label">{label}</span>
-                <span className="shortcut-desc">{desc}</span>
+                <span className="shortcut-label">{copy.shortcuts[intent].label}</span>
+                <span className="shortcut-desc">{copy.shortcuts[intent].desc}</span>
               </button>
             ))}
           </div>
@@ -129,7 +133,7 @@ export function ConversationView({ messages, turn, onSubmit, onShortcut, disable
                   {message.text}
                   {message.citations && message.citations.length > 0 && (
                     <div className="citations" aria-label="Sources">
-                      <strong>Sources</strong>
+                      <strong>{copy.sources}</strong>
                       {message.citations.map((c) => (
                         <span key={`${c.documentTitle}-${c.section}`}>
                           {c.documentTitle}, {c.section}{c.version ? ` (${c.version})` : ""}
@@ -140,19 +144,17 @@ export function ConversationView({ messages, turn, onSubmit, onShortcut, disable
                 </div>
                 {message.bookingPrompt && (
                   <div className="booking-prompt" role="complementary" aria-label="Book a session">
-                    <p className="booking-prompt__heading">Ready to take the next step?</p>
-                    <p className="booking-prompt__body">
-                      Booking a session is confidential and usually available within 48 hours.
-                    </p>
+                    <p className="booking-prompt__heading">{copy.bookingHeading}</p>
+                    <p className="booking-prompt__body">{copy.bookingBody}</p>
                     <a className="booking-prompt__btn" href="#eap-booking" id="book-session-link">
-                      Book a counsellor session
+                      {copy.bookingAction}
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                         <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                     </a>
                   </div>
                 )}
-                <p className="message__meta">{message.author === "user" ? "You" : "Thrap"}</p>
+                <p className="message__meta">{message.author === "user" ? copy.user : "Thrap"}</p>
               </article>
             ))}
             {isTyping && (
@@ -171,9 +173,7 @@ export function ConversationView({ messages, turn, onSubmit, onShortcut, disable
 
       <div className="composer-wrap">
         <form className="composer" onSubmit={handleSubmit}>
-          <label className="composer-label" htmlFor="message">
-            Share what's on your mind
-          </label>
+          <label className="composer-label" htmlFor="message">{copy.composerLabel}</label>
           <div className="composer-row">
             <input
               className="composer-input"
@@ -182,7 +182,7 @@ export function ConversationView({ messages, turn, onSubmit, onShortcut, disable
               maxLength={1000}
               disabled={disabled}
               autoComplete="off"
-              placeholder={listening ? "Listening…" : "Type or use the microphone…"}
+              placeholder={listening ? copy.listeningPlaceholder : copy.composerPlaceholder}
               value={listening && speech.interim ? `${draft}${speech.interim}` : draft}
               onChange={(event) => {
                 setDraft(event.target.value);
@@ -206,7 +206,7 @@ export function ConversationView({ messages, turn, onSubmit, onShortcut, disable
               </button>
             )}
 
-            <button className="send-button" type="submit" disabled={disabled || !draft.trim()} aria-label="Send message">
+            <button className="send-button" type="submit" disabled={disabled || !draft.trim()} aria-label={copy.send}>
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                 <path d="M3 10L17 10M17 10L11 4M17 10L11 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
@@ -224,7 +224,7 @@ export function ConversationView({ messages, turn, onSubmit, onShortcut, disable
           </p>
 
           <div className="composer-footer">
-            <p className="composer-hint">Not a crisis service. If you're in danger, contact emergency services.</p>
+            <p className="composer-hint">{copy.crisisHint}</p>
             {voice.supported && (
               <button
                 className="text-button text-button--sm"
@@ -232,15 +232,14 @@ export function ConversationView({ messages, turn, onSubmit, onShortcut, disable
                 onClick={toggleReadAloud}
                 aria-pressed={readAloud}
               >
-                {readAloud ? "Turn off read aloud" : "Read replies aloud"}
+                {readAloud ? copy.readAloudOn : copy.readAloudOff}
               </button>
             )}
           </div>
 
           {speech.status !== "unsupported" && (
             <p className="voice-note">
-              Dictation uses your browser's speech service, which may send audio to your
-              browser provider. Type instead if you would rather it did not.
+              {copy.voiceNote}
             </p>
           )}
         </form>

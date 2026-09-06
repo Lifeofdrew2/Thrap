@@ -53,6 +53,17 @@ function therapyApiPlugin(config: ThrapConfig): Plugin {
         if (req.url === "/api/session/clear") { send(api.clear(devSessionId)); return; }
         if (req.url === "/api/human-route")   { send(api.humanRoute()); return; }
 
+        if (req.url === "/api/translate-ui") {
+          const chunks: Buffer[] = [];
+          for await (const chunk of req) chunks.push(chunk as Buffer);
+          const body = JSON.parse(Buffer.concat(chunks).toString()) as {
+            languageName?: string;
+            copy?: Record<string, unknown>;
+          };
+          send(await api.translateUi({ languageName: body.languageName ?? "", copy: body.copy ?? {} }));
+          return;
+        }
+
         if (req.url === "/api/navigate") {
           const chunks: Buffer[] = [];
           for await (const chunk of req) chunks.push(chunk as Buffer);

@@ -20,7 +20,7 @@ const INDEX_FORMAT_VERSION = 1;
 /**
  * Resolved from the working directory rather than the module URL: the
  * production bundle sits in a build directory, while `knowledge/` stays at the
- * project root. Render runs the process from the repository root.
+ * project root. The production process runs from the repository root.
  */
 const KNOWLEDGE_DIR = process.env.KNOWLEDGE_DIR
   ? path.resolve(process.env.KNOWLEDGE_DIR)

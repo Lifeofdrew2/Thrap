@@ -1,12 +1,19 @@
+import type { AppCopy } from "../app/i18n";
+
 interface PrivacySummaryProps {
   onClose: () => void;
+  onBack: () => void;
+  copy: AppCopy;
 }
 
-export function PrivacySummary({ onClose }: PrivacySummaryProps) {
+export function PrivacySummary({ onClose, onBack, copy }: PrivacySummaryProps) {
   return (
     <main className="page-wrap privacy-page" aria-labelledby="privacy-heading">
-      <p className="eyebrow">Privacy summary</p>
-      <h1 id="privacy-heading">What happens to your information</h1>
+      <button className="text-button back-button" type="button" onClick={onBack}>
+        <span aria-hidden="true">←</span> {copy.back}
+      </button>
+      <p className="eyebrow">{copy.privacyEyebrow}</p>
+      <h1 id="privacy-heading">{copy.privacyHeading}</h1>
       <div className="privacy-body">
         <p>
           <strong>Anonymous sessions</strong> are never stored as identifiable conversations. Nothing
@@ -14,10 +21,9 @@ export function PrivacySummary({ onClose }: PrivacySummaryProps) {
           or third-party services.
         </p>
         <p>
-          <strong>Identified processing</strong> is a separate, optional choice. If you opt in,
-          your name, work email, and preferred contact method may be used solely to arrange a
-          counsellor booking or human follow-up. This data is retained only for the period
-          approved by the organisation's privacy policy.
+          This service does not collect names, email addresses, phone numbers, or other identifying
+          details. Human-support links open an external phone or organisation-approved route if you
+          choose to contact someone.
         </p>
         <p>
           <strong>Escalation records</strong> contain only the minimum information needed for a
@@ -29,7 +35,7 @@ export function PrivacySummary({ onClose }: PrivacySummaryProps) {
         </p>
       </div>
       <button className="secondary-button" type="button" onClick={onClose}>
-        Return to session
+        {copy.returnToSession}
       </button>
     </main>
   );

@@ -41,3 +41,11 @@ export const serviceResponseSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("turn_limit"), message: z.string(), humanRoute: humanRouteSchema, turn: turnStateSchema }),
 ]);
 export type ServiceResponse = z.infer<typeof serviceResponseSchema>;
+
+export const navigationInputSchema = z.object({
+  message: z.string().optional(),
+  intent: z.string().optional(),
+  region: z.string().min(2).optional(),
+  language: z.string().min(2).optional(),
+  languageName: z.string().min(1).optional(),
+});

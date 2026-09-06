@@ -1,10 +1,11 @@
 import { serviceResponseSchema } from "./schemas";
 import { ServiceRequestError } from "./errors";
 import type { ServiceResponse } from "./types";
+import type { NavigationInput } from "./types";
 
 const REQUEST_TIMEOUT_MS = 8_000;
 
-export async function requestNavigation(input: { message?: string; intent?: string }): Promise<ServiceResponse> {
+export async function requestNavigation(input: NavigationInput): Promise<ServiceResponse> {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 

@@ -35,9 +35,9 @@ Anonymous navigation is not stored as identifiable conversation content. Convers
 text is held in the browser's active memory for the length of the session and is not
 written to browser storage, the page URL, analytics, or logs.
 
-Identified processing happens only after a separate, explicit consent choice, for the
-single purpose named in that consent notice. Refusing it leaves anonymous navigation
-fully available.
+This service does not collect names, session-linked contact details, or other identifying
+information. Emergency and human-support links open external phone or organisation-approved
+routes if a person chooses to contact someone.
 
 Escalation records are kept separately from conversation content. They hold the minimum
 operational facts needed to show that a request was routed and a notification attempted,

@@ -16,7 +16,8 @@ import {
 import { DEFAULT_EMBEDDING_MODEL, embedTexts, type EmbeddingProvider } from "../rag/embeddings";
 import { createRetriever, type Retriever } from "../rag/retrieve";
 import type { RetrievedChunk } from "../rag/types";
-import type { Citation } from "../api/types";
+import type { Citation, ConversationLanguage, NavigationInput, Region } from "../api/types";
+import { z } from "zod";
 import { THERAPY_SYSTEM_PROMPT } from "../therapy-prompt";
 import {
   clearSession,
@@ -43,7 +44,18 @@ const CRISIS_SIGNALS = [
   "kill myself", "end my life", "suicide", "want to die",
   "hurt myself", "self harm", "self-harm", "harming myself",
   "don't want to be here", "not worth living", "better off dead",
-  "take my own life", "ending it",
+  "take my own life", "ending it", "no reason to live", "can't go on",
+  "i wan die", "i want die", "make i die", "i no wan live", "i no want live",
+  "life no worth am", "life no get meaning", "i don tire for life",
+  "everything don finish", "i go kill myself", "i fit kill myself",
+];
+
+const UNSAFE_OUTPUT_SIGNALS = [
+  /\bhow to (kill|hurt) yourself\b/i,
+  /\bmethods? (for|of) suicide\b/i,
+  /\bgo ahead and (kill|hurt) yourself\b/i,
+  /\byou should (die|kill yourself)\b/i,
+  /\bdo it[,!] you have nothing to lose\b/i,
 ];
 
 const INTENT_TO_MESSAGE: Record<string, string> = {
@@ -53,6 +65,7 @@ const INTENT_TO_MESSAGE: Record<string, string> = {
   BURNOUT:          "I'm experiencing burnout and work stress.",
   SLEEP:            "I've been having a lot of trouble sleeping.",
   BOOK_COUNSELLOR:  "I'd like to book a session with a counsellor.",
+  GRIEF:            "I've experienced a loss and would like to talk about it.",
 };
 
 const TURN_LIMIT = 20;
@@ -66,6 +79,43 @@ const FALLBACK_RESPONSES = [
   "What you've shared today sounds significant, and you deserve proper, consistent support. I'd really like to help you book a session with a licensed counsellor who can work through this with you properly. Would you like to do that?",
   "I'm glad you're still here. Take as much time as you need - there's no rush. What else would you like to talk through?",
 ];
+
+const PIDGIN_FALLBACK_RESPONSES = [
+  "Thank you say you reach out. I dey here with you. Wetin make you decide to talk today?",
+  "E sound like this matter don dey weigh you down. How long e don dey like this, and e dey get worse or e stay the same?",
+  "I wan understand how this matter dey affect your everyday life. How your sleep, work, concentration, or people around you dey go?",
+  "Wetin you share matter. You get person wey you trust wey know wetin you dey face, or you dey carry am alone?",
+];
+
+function promptLanguage(region: Region = "NG", language: ConversationLanguage = "eng", languageName = "English"): string {
+  if (language === "pcm" && region === "NG") {
+    return "The user prefers Nigerian Pidgin. Every sentence of your reply must be in clear, compassionate Nigerian Pidgin, not standard English. Use natural wording like 'I dey hear you', 'wetin dey happen', and 'you no need carry am alone' when appropriate. Do not parody, exaggerate, or force slang; preserve the user's dignity and keep safety instructions unmistakably clear.";
+  }
+  if (region === "NG" && language === "eng") {
+    return "The user prefers Nigerian English. Reply in clear, warm Nigerian workplace English with natural local phrasing where appropriate. Do not imitate or exaggerate errors, and keep safety instructions unmistakably clear.";
+  }
+  return `Selected language: ${languageName} (${language}). This language choice is authoritative. Always reply in this selected language even if the user writes in another language, unless they explicitly ask to switch. All generated text must use the selected language. Preserve names, numbers, dates, technical terms, proper nouns, safety wording, and approved service names accurately. Use natural native phrasing, not literal translation, and keep safety instructions unmistakably clear.`;
+}
+
+function containsUnsafeOutput(message: string): boolean {
+  return UNSAFE_OUTPUT_SIGNALS.some((signal) => signal.test(message));
+}
+
+function hasTranslatedShape(source: unknown, translated: unknown): boolean {
+  if (typeof source === "string") return typeof translated === "string" && translated.length > 0;
+  if (!source || typeof source !== "object" || !translated || typeof translated !== "object") return false;
+
+  const sourceRecord = source as Record<string, unknown>;
+  const translatedRecord = translated as Record<string, unknown>;
+  return Object.keys(sourceRecord).every(
+    (key) => key in translatedRecord && hasTranslatedShape(sourceRecord[key], translatedRecord[key]),
+  );
+}
+
+function parseModelJson(raw: string): unknown {
+  const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  return JSON.parse(cleaned);
+}
 
 export interface EmbeddingConfig {
   provider: EmbeddingProvider;
@@ -123,6 +173,7 @@ async function callChatModel(
   systemInstruction: string,
   history: ChatMessage[],
   userMessage: string,
+  maxTokens = 800,
 ): Promise<string> {
   const body = {
     model,
@@ -133,7 +184,7 @@ async function callChatModel(
     ],
     temperature: 0.75,
     top_p: 0.9,
-    max_tokens: 800,
+    max_tokens: maxTokens,
   };
 
   // A transient provider overload should not end someone's session at a
@@ -231,13 +282,32 @@ function groundedFallback(results: RetrievedChunk[]): { message: string; citatio
 
 export type ApiResult = { status: number; body: unknown };
 
+const uiTranslationInputSchema = z.object({
+  languageName: z.string().min(1).max(100),
+  copy: z.record(z.unknown()),
+});
+
+const navigationInputSchema = z.object({
+  message: z.string().optional(),
+  intent: z.string().optional(),
+  region: z.string().min(2).optional(),
+  language: z.string().min(2).optional(),
+  languageName: z.string().min(1).optional(),
+});
+
+export function parseNavigationInput(input: Record<string, unknown>): NavigationInput | null {
+  const parsed = navigationInputSchema.safeParse(input);
+  return parsed.success ? parsed.data : null;
+}
+
 const escalation = (reasonCode: string): ApiResult => ({
   status: 200,
   body: { kind: "escalation", message: "", reasonCode, humanRoute: HUMAN_ROUTE },
 });
 
 export interface ThrapApi {
-  navigate(input: { message?: string; intent?: string }, session: Session): Promise<ApiResult>;
+  navigate(input: NavigationInput, session: Session): Promise<ApiResult>;
+  translateUi(input: { languageName: string; copy: Record<string, unknown> }): Promise<ApiResult>;
   humanRoute(): ApiResult;
   clear(sessionId: string): ApiResult;
   ready(): Promise<Retriever>;
@@ -252,12 +322,42 @@ export function createThrapApi(
 
   // Built once, lazily, and shared across requests.
   let retrieverPromise: Promise<Retriever> | null = null;
+  const translatedUiCopy = new Map<string, Record<string, unknown>>();
   const getRetriever = () => (retrieverPromise ??= buildRetriever(config.embed));
 
   return {
     hasKey,
     ready: getRetriever,
     humanRoute: () => escalation("crisis"),
+
+    async translateUi(input) {
+      if (!hasKey) return { status: 503, body: { error: "translation_unavailable" } };
+
+      const parsed = uiTranslationInputSchema.safeParse(input);
+      if (!parsed.success) return { status: 400, body: { error: "invalid_request" } };
+      const cached = translatedUiCopy.get(parsed.data.languageName);
+      if (cached) return { status: 200, body: { copy: cached } };
+
+      try {
+        const raw = await callChatModel(
+          config.apiKey,
+          config.model,
+          `Translate the supplied Thrap interface copy into ${parsed.data.languageName}. Return JSON only, preserving exactly the same keys and nested structure. Translate every user-facing string naturally and completely. Do not translate proper nouns such as Thrap, preserve placeholders, and do not add or remove keys. This is interface copy for a mental health service, so keep privacy, consent, crisis, and safety wording accurate and respectful.`,
+          [],
+          JSON.stringify(parsed.data.copy),
+          2400,
+        );
+        const translated = parseModelJson(raw);
+        if (!hasTranslatedShape(parsed.data.copy, translated)) {
+          return { status: 502, body: { error: "invalid_translation" } };
+        }
+        translatedUiCopy.set(parsed.data.languageName, translated as Record<string, unknown>);
+        return { status: 200, body: { copy: translated } };
+      } catch (error) {
+        console.error("[Thrap] UI translation failed:", error instanceof Error ? error.message : error);
+        return { status: 502, body: { error: "translation_failure" } };
+      }
+    },
 
     clear(sessionId) {
       clearSession(sessionId);
@@ -301,8 +401,8 @@ export function createThrapApi(
         if (hasKey) {
           const contextBlock = buildContextBlock(results);
           const systemInstruction = contextBlock
-            ? `${THERAPY_SYSTEM_PROMPT}\n\n${contextBlock}`
-            : THERAPY_SYSTEM_PROMPT;
+            ? `${THERAPY_SYSTEM_PROMPT}\n\n${promptLanguage(input.region, input.language, input.languageName)}\n\n${contextBlock}`
+            : `${THERAPY_SYSTEM_PROMPT}\n\n${promptLanguage(input.region, input.language, input.languageName)}`;
 
           const rawReply = await callChatModel(
             config.apiKey, config.model, systemInstruction, session.history, userMessage,
@@ -314,15 +414,22 @@ export function createThrapApi(
         } else {
           await new Promise((r) => setTimeout(r, 900 + Math.random() * 700));
 
-          const grounded = groundedFallback(results);
+          const grounded = input.language === "eng" ? groundedFallback(results) : null;
           if (grounded) {
             message = grounded.message;
             citations = grounded.citations;
-          } else {
+          } else if (input.language === "pcm" && input.region === "NG") {
+            message = PIDGIN_FALLBACK_RESPONSES[
+              Math.min(session.fallbackIndex++, PIDGIN_FALLBACK_RESPONSES.length - 1)
+            ];
+            citations = [];
+          } else if (input.language === "eng") {
             message = FALLBACK_RESPONSES[
               Math.min(session.fallbackIndex++, FALLBACK_RESPONSES.length - 1)
             ];
             citations = [];
+          } else {
+            return escalation("backend_failure");
           }
         }
 
@@ -330,8 +437,8 @@ export function createThrapApi(
         message = message.replace(BOOKING_TOKEN, "").trim();
 
         // Output guard: an unapproved placeholder must never reach a person.
-        if (containsUnresolvedPlaceholder(message)) {
-          console.warn("[Thrap] Output guard: unresolved placeholder in reply, escalating.");
+        if (containsUnresolvedPlaceholder(message) || containsUnsafeOutput(message)) {
+          console.warn("[Thrap] Output guard: unsafe or unresolved reply, escalating.");
           return escalation("output_guard");
         }
 

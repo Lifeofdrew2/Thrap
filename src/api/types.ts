@@ -7,6 +7,17 @@ export type TerminalReason =
   | "invalid_response"
   | "human_route_failure";
 
+export type Region = string;
+export type ConversationLanguage = string;
+
+export interface NavigationInput {
+  message?: string;
+  intent?: string;
+  region?: Region;
+  language?: ConversationLanguage;
+  languageName?: string;
+}
+
 export interface HumanRoute {
   role: string;
   channelLabel: string;

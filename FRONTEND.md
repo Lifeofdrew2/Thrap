@@ -26,7 +26,7 @@ These rules are enforced in component boundaries and tests, not only in copy:
 6. No factual answer renders without citations. In development, an uncited factual response is a visible defect and a test failure; in production it routes to escalation.
 7. Every state has a human route. There is no generic error-only state.
 8. No conversation content is written to localStorage, sessionStorage, IndexedDB, URL parameters, browser history, analytics, telemetry, console output, or third-party services.
-9. Refusing identified-processing consent does not disable anonymous navigation.
+9. Anonymous navigation is the only in-app processing mode.
 10. The turn limit concludes the session; it cannot be bypassed by starting another chat from the same client flow.
 11. Presented content is never conversation. The module reader and the guidance reader have no composer, no reply region, and no affordance implying the system will respond to what a person writes.
 12. A reflection never produces a response. Submitting one changes the interface only by accepting it. It never renders an acknowledgement, interpretation, summary, encouragement, or follow-up prompt.
@@ -112,7 +112,7 @@ The API contract is generated from the backend OpenAPI schema or checked in as a
 
 `AppShell` owns the persistent privacy summary link, the always-visible `Talk to a person` control, and the session lifecycle. It never owns message interpretation.
 
-`OnboardingScreen` is shown on first use for the current browser session. It states the service limits, recording model, and human route before input is available. `ConsentStep` is a separate, unbundled decision. Accepting permits only the specifically named identified-processing purpose; refusing keeps the anonymous route available. Neither control is preselected.
+`OnboardingScreen` is shown on first use for the current browser session. It states the service limits, recording model, and human route before input is available. The person explicitly selects a country and language before continuing. `ConsentStep` confirms anonymous use; the product does not collect identifying details.
 
 `ConversationView` renders either the empty-state shortcut directory or the bounded conversation. `MessageList` renders ordinary user messages and validated answers. `AgentAnswer` requires citations for factual content. `RefusalNotice` is a non-chat policy response with a human route. `TurnLimitNotice` transitions to a terminal conclusion rather than adding another prompt.
 
@@ -154,9 +154,8 @@ Use an explicit discriminated union or state machine. TanStack Query manages req
 ONBOARDING
   -> CONSENT_REQUIRED
   -> READY_ANONYMOUS
-  -> READY_IDENTIFIED       only after explicit consent
 
-READY_ANONYMOUS / READY_IDENTIFIED
+READY_ANONYMOUS
   -> SUBMITTING
   -> HUMAN_ROUTE_REQUESTING
   -> CLEARING
@@ -334,13 +333,13 @@ The first screen contains four short sections:
 - **What this service can do:** find approved resources, explain organisation-provided policy, help request a booking, and connect the user to a person.
 - **What it cannot do:** it is not a therapist, crisis service, diagnostic service, or medical adviser.
 - **Who to contact instead:** `[NAMED HUMAN ROLE]` through `[ORG-APPROVED CHANNEL]`; immediate-danger wording is approved by the organisation before release.
-- **What is recorded:** anonymous navigation is not stored as identifiable conversation; identified processing occurs only after the separate consent choice; operational escalation records and retention are explained plainly.
+- **What is recorded:** anonymous navigation is not stored as identifiable conversation; identifying details are not collected; operational escalation records and retention are explained plainly.
 
-The user must acknowledge the framing to enter the service, but acknowledgement is not consent for identified processing.
+The user must acknowledge the framing and confirm anonymous use to enter the service.
 
 ### Consent
 
-The consent screen has separate `Allow identified processing` and `Continue without identified processing` actions, both unselected initially. The notice names the purpose, categories of data, retention placeholder, human access, withdrawal path, and any offshore provider transfer. Refusal leaves coverage/policy/resource navigation available anonymously. Features that truly require identity, such as booking or escalation contact details, explain the limitation at the point of use and offer the human route.
+The consent screen has one action: `Continue anonymously`. The notice says that names, email addresses, phone numbers, and other identifying details are not collected. Emergency and human-support links open external phone or organisation-approved routes.
 
 A privacy summary is reachable from the shell, onboarding, consent, conversation, and terminal states. It opens as a full accessible page or non-dismissible route, not a buried footer. It contains the short summary and a link/reference to the approved full notice.
 
@@ -399,13 +398,11 @@ These are proposed product words, deliberately plain. Organisation-specific valu
 
 ### Consent
 
-**Heading:** `Choose how your information is used`
+**Heading:** `Use this service anonymously`
 
-**Body:** `You can use anonymous navigation for approved resource and policy information. Identified processing is a separate choice used only for [APPROVED PURPOSE]. It may involve [APPROVED DATA CATEGORIES] and is kept for [RETENTION PERIOD].`
+**Body:** `You can use this service anonymously. We do not collect names, email addresses, phone numbers, or other identifying details.`
 
-**Primary choice:** `Allow identified processing`
-
-**Refusal choice:** `Continue without identified processing`
+**Primary choice:** `Continue anonymously`
 
 **Privacy link:** `Read the privacy summary`
 
