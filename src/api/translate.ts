@@ -2,7 +2,7 @@ import type { AppCopy } from "../app/i18n";
 import { ServiceRequestError } from "./errors";
 
 const REQUEST_TIMEOUT_MS = 15_000;
-const CACHE_PREFIX = "thrap-ui-copy:v2:";
+const CACHE_PREFIX = "thrap-ui-copy:v3:";
 const pendingTranslations = new Map<string, Promise<AppCopy>>();
 
 function readCachedCopy(languageName: string): AppCopy | null {

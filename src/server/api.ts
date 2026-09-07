@@ -347,7 +347,7 @@ export function createThrapApi(
           `Translate the supplied Thrap interface copy into ${parsed.data.languageName} (ISO 639-3 code: ${parsed.data.languageCode}). For Ibo specifically, use standard modern Ibo (Asusu Ibo), not Yoruba, Hausa, Nigerian Pidgin, or English. Return JSON only, preserving exactly the same keys and nested structure. Translate every user-facing string naturally and completely. Do not translate proper nouns such as Thrap, preserve placeholders, and do not add or remove keys. This is interface copy for a mental health service, so keep privacy, consent, crisis, and safety wording accurate and respectful.`,
           [],
           JSON.stringify(parsed.data.copy),
-          2400,
+          8000,
         );
         const translated = parseModelJson(raw);
         if (!hasTranslatedShape(parsed.data.copy, translated)) {
