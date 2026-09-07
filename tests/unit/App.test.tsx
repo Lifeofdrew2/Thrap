@@ -11,7 +11,7 @@ afterEach(() => {
 describe("App framing", () => {
   it("offers Igbo, Yoruba, and Hausa for translated sessions", () => {
     expect(LANGUAGE_OPTIONS).toEqual(expect.arrayContaining([
-      { value: "ibo", label: "Igbo" },
+      { value: "ibo", label: "Ibo" },
       { value: "yor", label: "Yoruba" },
       { value: "hau", label: "Hausa" },
     ]));

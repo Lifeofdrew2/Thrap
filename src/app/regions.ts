@@ -26,7 +26,7 @@ export const REGION_OPTIONS: RegionOption[] = [
 
 export const LANGUAGE_OPTIONS: LanguageOption[] = [
   { value: "pcm", label: "Nigerian Pidgin" },
-  { value: "ibo", label: "Igbo" },
+  { value: "ibo", label: "Ibo" },
   { value: "yor", label: "Yoruba" },
   { value: "hau", label: "Hausa" },
   { value: "eng", label: "English" },

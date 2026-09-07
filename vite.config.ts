@@ -57,10 +57,11 @@ function therapyApiPlugin(config: ThrapConfig): Plugin {
           const chunks: Buffer[] = [];
           for await (const chunk of req) chunks.push(chunk as Buffer);
           const body = JSON.parse(Buffer.concat(chunks).toString()) as {
+            languageCode?: string;
             languageName?: string;
             copy?: Record<string, unknown>;
           };
-          send(await api.translateUi({ languageName: body.languageName ?? "", copy: body.copy ?? {} }));
+          send(await api.translateUi({ languageCode: body.languageCode ?? "", languageName: body.languageName ?? "", copy: body.copy ?? {} }));
           return;
         }
 

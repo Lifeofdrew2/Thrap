@@ -45,7 +45,7 @@ export function App() {
 
     setTranslationLoading(true);
     try {
-      const translated = await requestTranslatedCopy(nextLanguageName, getAppCopy("eng"));
+      const translated = await requestTranslatedCopy(nextLanguage, nextLanguageName, getAppCopy("eng"));
       if (requestId === translationRequest.current) setCopy(translated);
     } catch {
       if (requestId === translationRequest.current) setCopy(localCopy);

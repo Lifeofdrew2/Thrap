@@ -2,7 +2,7 @@ import type { AppCopy } from "../app/i18n";
 import { ServiceRequestError } from "./errors";
 
 const REQUEST_TIMEOUT_MS = 15_000;
-const CACHE_PREFIX = "thrap-ui-copy:";
+const CACHE_PREFIX = "thrap-ui-copy:v2:";
 const pendingTranslations = new Map<string, Promise<AppCopy>>();
 
 function readCachedCopy(languageName: string): AppCopy | null {
@@ -22,25 +22,26 @@ function cacheCopy(languageName: string, copy: AppCopy): void {
   }
 }
 
-export async function requestTranslatedCopy(languageName: string, copy: AppCopy): Promise<AppCopy> {
-  const cached = readCachedCopy(languageName);
+export async function requestTranslatedCopy(languageCode: string, languageName: string, copy: AppCopy): Promise<AppCopy> {
+  const cacheKey = `${languageCode}:${languageName}`;
+  const cached = readCachedCopy(cacheKey);
   if (cached) return cached;
 
-  const pending = pendingTranslations.get(languageName);
+  const pending = pendingTranslations.get(cacheKey);
   if (pending) return pending;
 
-  const request = requestTranslatedCopyFromServer(languageName, copy);
-  pendingTranslations.set(languageName, request);
+  const request = requestTranslatedCopyFromServer(languageCode, languageName, copy);
+  pendingTranslations.set(cacheKey, request);
   try {
     const translated = await request;
-    cacheCopy(languageName, translated);
+    cacheCopy(cacheKey, translated);
     return translated;
   } finally {
-    pendingTranslations.delete(languageName);
+    pendingTranslations.delete(cacheKey);
   }
 }
 
-async function requestTranslatedCopyFromServer(languageName: string, copy: AppCopy): Promise<AppCopy> {
+async function requestTranslatedCopyFromServer(languageCode: string, languageName: string, copy: AppCopy): Promise<AppCopy> {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -48,7 +49,7 @@ async function requestTranslatedCopyFromServer(languageName: string, copy: AppCo
     const response = await fetch("/api/translate-ui", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ languageName, copy }),
+      body: JSON.stringify({ languageCode, languageName, copy }),
       cache: "no-store",
       signal: controller.signal,
     });

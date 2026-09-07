@@ -283,6 +283,7 @@ function groundedFallback(results: RetrievedChunk[]): { message: string; citatio
 export type ApiResult = { status: number; body: unknown };
 
 const uiTranslationInputSchema = z.object({
+  languageCode: z.string().min(2).max(20),
   languageName: z.string().min(1).max(100),
   copy: z.record(z.unknown()),
 });
@@ -307,7 +308,7 @@ const escalation = (reasonCode: string): ApiResult => ({
 
 export interface ThrapApi {
   navigate(input: NavigationInput, session: Session): Promise<ApiResult>;
-  translateUi(input: { languageName: string; copy: Record<string, unknown> }): Promise<ApiResult>;
+  translateUi(input: { languageCode: string; languageName: string; copy: Record<string, unknown> }): Promise<ApiResult>;
   humanRoute(): ApiResult;
   clear(sessionId: string): ApiResult;
   ready(): Promise<Retriever>;
@@ -335,14 +336,15 @@ export function createThrapApi(
 
       const parsed = uiTranslationInputSchema.safeParse(input);
       if (!parsed.success) return { status: 400, body: { error: "invalid_request" } };
-      const cached = translatedUiCopy.get(parsed.data.languageName);
+      const cacheKey = `${parsed.data.languageCode}:${parsed.data.languageName}`;
+      const cached = translatedUiCopy.get(cacheKey);
       if (cached) return { status: 200, body: { copy: cached } };
 
       try {
         const raw = await callChatModel(
           config.apiKey,
           config.model,
-          `Translate the supplied Thrap interface copy into ${parsed.data.languageName}. Return JSON only, preserving exactly the same keys and nested structure. Translate every user-facing string naturally and completely. Do not translate proper nouns such as Thrap, preserve placeholders, and do not add or remove keys. This is interface copy for a mental health service, so keep privacy, consent, crisis, and safety wording accurate and respectful.`,
+          `Translate the supplied Thrap interface copy into ${parsed.data.languageName} (ISO 639-3 code: ${parsed.data.languageCode}). For Ibo specifically, use standard modern Ibo (Asusu Ibo), not Yoruba, Hausa, Nigerian Pidgin, or English. Return JSON only, preserving exactly the same keys and nested structure. Translate every user-facing string naturally and completely. Do not translate proper nouns such as Thrap, preserve placeholders, and do not add or remove keys. This is interface copy for a mental health service, so keep privacy, consent, crisis, and safety wording accurate and respectful.`,
           [],
           JSON.stringify(parsed.data.copy),
           2400,
@@ -351,7 +353,7 @@ export function createThrapApi(
         if (!hasTranslatedShape(parsed.data.copy, translated)) {
           return { status: 502, body: { error: "invalid_translation" } };
         }
-        translatedUiCopy.set(parsed.data.languageName, translated as Record<string, unknown>);
+        translatedUiCopy.set(cacheKey, translated as Record<string, unknown>);
         return { status: 200, body: { copy: translated } };
       } catch (error) {
         console.error("[Thrap] UI translation failed:", error instanceof Error ? error.message : error);

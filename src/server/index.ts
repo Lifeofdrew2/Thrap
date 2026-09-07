@@ -171,8 +171,8 @@ const server = createServer(async (req, res) => {
         return;
       }
       if (urlPath === "/api/translate-ui") {
-        const body = await readJsonBody(req) as { languageName?: string; copy?: Record<string, unknown> };
-        sendJson(res, await api.translateUi({ languageName: body.languageName ?? "", copy: body.copy ?? {} }));
+        const body = await readJsonBody(req) as { languageCode?: string; languageName?: string; copy?: Record<string, unknown> };
+        sendJson(res, await api.translateUi({ languageCode: body.languageCode ?? "", languageName: body.languageName ?? "", copy: body.copy ?? {} }));
         return;
       }
       if (urlPath === "/api/navigate") {
