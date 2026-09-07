@@ -159,7 +159,13 @@ describe("voice input", () => {
   it("lets the person choose a male or female read-aloud voice", () => {
     Object.defineProperty(window, "speechSynthesis", {
       configurable: true,
-      value: { cancel: vi.fn(), speak: vi.fn(), getVoices: () => [] },
+      value: {
+        cancel: vi.fn(),
+        speak: vi.fn(),
+        getVoices: () => [{ name: "Samantha", lang: "en-US" }],
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      },
     });
     class MockUtterance {
       onend: (() => void) | null = null;

@@ -23,6 +23,7 @@ export interface SpeechSynthesisState {
 export function useSpeechSynthesis(): SpeechSynthesisState {
   const [speaking, setSpeaking] = useState(false);
   const [voiceGender, setVoiceGender] = useState<"female" | "male">("female");
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const supported = typeof window !== "undefined" && "speechSynthesis" in window;
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
@@ -40,18 +41,20 @@ export function useSpeechSynthesis(): SpeechSynthesisState {
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.95;
-    utterance.pitch = 1;
+    utterance.rate = 0.9;
+    utterance.pitch = 0.98;
+    utterance.volume = 1;
 
-    const voices = window.speechSynthesis.getVoices();
-    const englishVoices = voices.filter((voice) => voice.lang.toLowerCase().startsWith("en"));
+    const availableVoices = voices.length > 0 ? voices : window.speechSynthesis.getVoices();
+    const englishVoices = availableVoices.filter((voice) => voice.lang.toLowerCase().startsWith("en"));
     const genderNames = voiceGender === "female"
-      ? /female|woman|zira|samantha|karen|susan|victoria|moira|ava|allison|libby|hazel/i
-      : /male|man|david|daniel|alex|george|mark|james|oliver|arthur|guy/i;
+      ? /samantha|jenny|ava|allison|aria|susan|victoria|moira|karen|hazel|libby|google us english female|google uk english female/i
+      : /daniel|david|alex|george|mark|james|oliver|arthur|guy|ryan|google us english male|google uk english male/i;
     const preferred = englishVoices.find((voice) => genderNames.test(voice.name))
-      ?? englishVoices.find((voice) => voice.lang === "en-NG")
       ?? englishVoices.find((voice) => voice.lang.startsWith("en-GB"))
-      ?? voices[0];
+      ?? englishVoices.find((voice) => voice.lang === "en-NG")
+      ?? englishVoices[0]
+      ?? availableVoices[0];
     if (preferred) utterance.voice = preferred;
 
     utterance.onend = () => setSpeaking(false);
@@ -62,9 +65,15 @@ export function useSpeechSynthesis(): SpeechSynthesisState {
     window.speechSynthesis.speak(utterance);
   }, [supported, voiceGender]);
 
-  // Leaving the page mid-sentence must not keep the device talking.
-  useEffect(() => () => {
-    if (supported) window.speechSynthesis.cancel();
+  useEffect(() => {
+    if (!supported) return;
+    const updateVoices = () => setVoices(window.speechSynthesis.getVoices());
+    updateVoices();
+    window.speechSynthesis.addEventListener("voiceschanged", updateVoices);
+    return () => {
+      window.speechSynthesis.removeEventListener("voiceschanged", updateVoices);
+      window.speechSynthesis.cancel();
+    };
   }, [supported]);
 
   return { supported, speaking, voiceGender, setVoiceGender, speak, cancel };
