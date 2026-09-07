@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../../src/App";
+import { LANGUAGE_OPTIONS } from "../../src/app/regions";
 
 afterEach(() => {
   cleanup();
@@ -8,6 +9,14 @@ afterEach(() => {
 });
 
 describe("App framing", () => {
+  it("offers Igbo, Yoruba, and Hausa for translated sessions", () => {
+    expect(LANGUAGE_OPTIONS).toEqual(expect.arrayContaining([
+      { value: "ibo", label: "Igbo" },
+      { value: "yor", label: "Yoruba" },
+      { value: "hau", label: "Hausa" },
+    ]));
+  });
+
   it("keeps anonymous navigation available when consent is refused", () => {
     render(<App />);
 
