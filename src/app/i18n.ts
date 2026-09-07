@@ -45,6 +45,9 @@ export interface AppCopy {
   send: string;
   readAloudOn: string;
   readAloudOff: string;
+  voiceChoice: string;
+  femaleVoice: string;
+  maleVoice: string;
   voiceNote: string;
   crisisHint: string;
   user: string;
@@ -120,6 +123,9 @@ const ENGLISH_COPY: AppCopy = {
   send: "Send message",
   readAloudOn: "Turn off read aloud",
   readAloudOff: "Read replies aloud",
+  voiceChoice: "Voice",
+  femaleVoice: "Female voice",
+  maleVoice: "Male voice",
   voiceNote: "Dictation uses your browser's speech service, which may send audio to your browser provider. Type instead if you would rather it did not.",
   crisisHint: "Not a crisis service. If you're in danger, contact emergency services.",
   user: "You",
@@ -196,6 +202,9 @@ const PIDGIN_COPY: AppCopy = {
   send: "Send message",
   readAloudOn: "Turn off read aloud",
   readAloudOff: "Read replies aloud",
+  voiceChoice: "Voice",
+  femaleVoice: "Female voice",
+  maleVoice: "Male voice",
   voiceNote: "Dictation dey use your browser speech service, and e fit send audio to your browser provider. Type instead if you no want that.",
   crisisHint: "This no be crisis service. If you dey danger, contact emergency services.",
   user: "You",

@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { getAppCopy } from "../../src/app/i18n";
 import { ConversationView } from "../../src/components/ConversationView";
 
 /**
@@ -53,6 +54,7 @@ const baseProps = {
   onShortcut: vi.fn(),
   disabled: false,
   isTyping: false,
+  copy: getAppCopy("eng"),
 };
 
 beforeEach(() => {
@@ -152,5 +154,29 @@ describe("voice input", () => {
     render(<ConversationView {...baseProps} onSubmit={vi.fn()} />);
     const toggle = screen.queryByRole("button", { name: /read replies aloud/i });
     if (toggle) expect(toggle).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("lets the person choose a male or female read-aloud voice", () => {
+    Object.defineProperty(window, "speechSynthesis", {
+      configurable: true,
+      value: { cancel: vi.fn(), speak: vi.fn(), getVoices: () => [] },
+    });
+    class MockUtterance {
+      onend: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      rate = 1;
+      pitch = 1;
+      voice: SpeechSynthesisVoice | null = null;
+      constructor(public text: string) {}
+    }
+    vi.stubGlobal("SpeechSynthesisUtterance", MockUtterance);
+
+    render(<ConversationView {...baseProps} onSubmit={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /read replies aloud/i }));
+
+    expect(screen.getByLabelText("Voice")).toHaveValue("female");
+    fireEvent.change(screen.getByLabelText("Voice"), { target: { value: "male" } });
+    expect(screen.getByLabelText("Voice")).toHaveValue("male");
   });
 });

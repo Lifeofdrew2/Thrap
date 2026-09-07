@@ -14,12 +14,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 export interface SpeechSynthesisState {
   supported: boolean;
   speaking: boolean;
+  voiceGender: "female" | "male";
+  setVoiceGender(gender: "female" | "male"): void;
   speak(text: string): void;
   cancel(): void;
 }
 
 export function useSpeechSynthesis(): SpeechSynthesisState {
   const [speaking, setSpeaking] = useState(false);
+  const [voiceGender, setVoiceGender] = useState<"female" | "male">("female");
   const supported = typeof window !== "undefined" && "speechSynthesis" in window;
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
@@ -40,10 +43,15 @@ export function useSpeechSynthesis(): SpeechSynthesisState {
     utterance.rate = 0.95;
     utterance.pitch = 1;
 
-    const preferred = window.speechSynthesis
-      .getVoices()
-      .find((voice) => voice.lang === "en-NG")
-      ?? window.speechSynthesis.getVoices().find((voice) => voice.lang.startsWith("en-GB"));
+    const voices = window.speechSynthesis.getVoices();
+    const englishVoices = voices.filter((voice) => voice.lang.toLowerCase().startsWith("en"));
+    const genderNames = voiceGender === "female"
+      ? /female|woman|zira|samantha|karen|susan|victoria|moira|ava|allison|libby|hazel/i
+      : /male|man|david|daniel|alex|george|mark|james|oliver|arthur|guy/i;
+    const preferred = englishVoices.find((voice) => genderNames.test(voice.name))
+      ?? englishVoices.find((voice) => voice.lang === "en-NG")
+      ?? englishVoices.find((voice) => voice.lang.startsWith("en-GB"))
+      ?? voices[0];
     if (preferred) utterance.voice = preferred;
 
     utterance.onend = () => setSpeaking(false);
@@ -52,12 +60,12 @@ export function useSpeechSynthesis(): SpeechSynthesisState {
     utteranceRef.current = utterance;
     setSpeaking(true);
     window.speechSynthesis.speak(utterance);
-  }, [supported]);
+  }, [supported, voiceGender]);
 
   // Leaving the page mid-sentence must not keep the device talking.
   useEffect(() => () => {
     if (supported) window.speechSynthesis.cancel();
   }, [supported]);
 
-  return { supported, speaking, speak, cancel };
+  return { supported, speaking, voiceGender, setVoiceGender, speak, cancel };
 }

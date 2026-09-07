@@ -237,6 +237,20 @@ export function ConversationView({ messages, turn, onSubmit, onShortcut, disable
             )}
           </div>
 
+              {voice.supported && readAloud && (
+                <div className="voice-choice">
+                  <label htmlFor="read-aloud-voice">{copy.voiceChoice}</label>
+                  <select
+                    id="read-aloud-voice"
+                    value={voice.voiceGender}
+                    onChange={(event) => voice.setVoiceGender(event.target.value as "female" | "male")}
+                  >
+                    <option value="female">{copy.femaleVoice}</option>
+                    <option value="male">{copy.maleVoice}</option>
+                  </select>
+                </div>
+              )}
+
           {speech.status !== "unsupported" && (
             <p className="voice-note">
               {copy.voiceNote}
