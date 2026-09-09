@@ -83,15 +83,15 @@ p { line-height: 1.65; }
 }
 
 .header-logo-wrap {
-  width: 3.25rem;
-  height: 2.75rem;
+  width: 4.25rem;
+  height: 3.4rem;
   overflow: hidden;
   flex: 0 0 auto;
 }
 
 .header-logo {
   display: block;
-  width: 3.25rem;
+  width: 4.25rem;
   height: auto;
   object-fit: contain;
   object-position: top center;

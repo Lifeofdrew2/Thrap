@@ -151,9 +151,8 @@ export function App() {
       <header className="app-header">
         <div className="header-brand">
           <span className="header-logo-wrap">
-            <img className="header-logo" src="/logo.png" alt="" />
+            <img className="header-logo" src="/logo.png" alt="Thrap" />
           </span>
-          <p className="service-mark">Thrap</p>
         </div>
         <div className="header-actions">
           {!terminal && !turnLimitRoute && stage !== "privacy" && (
