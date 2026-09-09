@@ -26,10 +26,12 @@ export interface AppCopy {
   consentEyebrow: string;
   consentHeading: string;
   consentBody: string;
+  identified: string;
   anonymous: string;
   back: string;
   privacyNote: string;
   anonymousModeNote: string;
+  identifiedModeNote: string;
   privacyEyebrow: string;
   privacyHeading: string;
   returnToSession: string;
@@ -94,12 +96,14 @@ const ENGLISH_COPY: AppCopy = {
   talkToPerson: "Talk to a person",
   clearSession: "Clear session",
   consentEyebrow: "Privacy choice",
-  consentHeading: "How should we handle your information?",
-  consentBody: "You can use this service completely anonymously. Nothing is stored on your device and no one can identify you. If you need more support, you can use the external emergency or human-support contacts without sharing information here.",
-  anonymous: "Continue anonymously",
+  consentHeading: "Choose your privacy",
+  consentBody: "Anonymous is the default. Identified support is optional and only applies if you later choose a booking or follow-up route.",
+  identified: "Allow identified support",
+  anonymous: "Stay anonymous",
   back: "Back",
   privacyNote: "Read the privacy summary for full details before choosing.",
   anonymousModeNote: "This session is anonymous. We will not ask for your name, email, phone number, or other identifying details.",
+  identifiedModeNote: "Identified support is allowed only for a future booking or follow-up step. We are not collecting your details now.",
   privacyEyebrow: "Privacy summary",
   privacyHeading: "What happens to your information",
   returnToSession: "Return to session",
@@ -173,12 +177,14 @@ const PIDGIN_COPY: AppCopy = {
   talkToPerson: "Talk to person",
   clearSession: "Clear session",
   consentEyebrow: "Privacy choice",
-  consentHeading: "How you want make we handle your information?",
-  consentBody: "You fit use this service completely anonymous. Nothing wey you type dey stay for your device, and nobody fit know say na you. If you need more support, you fit use the external emergency or human-support contacts without sharing information here.",
-  anonymous: "Continue anonymously",
+  consentHeading: "Choose your privacy",
+  consentBody: "Anonymous na the default. Identified support na optional and e only apply if you later choose booking or follow-up route.",
+  identified: "Allow identified support",
+  anonymous: "Stay anonymous",
   back: "Go back",
   privacyNote: "Read the privacy summary before you choose.",
   anonymousModeNote: "This session anonymous. We no go ask for your name, email, phone number, or other identifying details.",
+  identifiedModeNote: "Identified support dey allowed only for future booking or follow-up step. We no dey collect your details now.",
   privacyEyebrow: "Privacy summary",
   privacyHeading: "Wetin dey happen to your information",
   returnToSession: "Go back to session",

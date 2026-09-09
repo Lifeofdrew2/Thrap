@@ -17,13 +17,13 @@ describe("App framing", () => {
     ]));
   });
 
-  it("keeps anonymous navigation available when consent is refused", () => {
+  it("keeps anonymous navigation available when selected", () => {
     render(<App />);
 
     fireEvent.change(screen.getByLabelText("Select your country"), { target: { value: "NG" } });
     fireEvent.change(screen.getByLabelText("Select your language"), { target: { value: "eng" } });
     fireEvent.click(screen.getByRole("button", { name: "I understand — begin session" }));
-    fireEvent.click(screen.getByRole("button", { name: "Continue anonymously" }));
+    fireEvent.click(screen.getByRole("button", { name: "Stay anonymous" }));
 
     expect(screen.getByRole("heading", { name: "How are you feeling today?" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Talk to a counsellor/ })).toBeEnabled();
@@ -36,7 +36,7 @@ describe("App framing", () => {
     fireEvent.change(screen.getByLabelText("Select your country"), { target: { value: "NG" } });
     fireEvent.change(screen.getByLabelText("Select your language"), { target: { value: "eng" } });
     fireEvent.click(screen.getByRole("button", { name: "I understand — begin session" }));
-    fireEvent.click(screen.getByRole("button", { name: "Continue anonymously" }));
+    fireEvent.click(screen.getByRole("button", { name: "Stay anonymous" }));
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "Check my coverage" } });
     fireEvent.click(screen.getByRole("button", { name: "Send message" }));
 
@@ -61,9 +61,9 @@ describe("App framing", () => {
     fireEvent.change(screen.getByLabelText("Select your country"), { target: { value: "NG" } });
     fireEvent.change(screen.getByLabelText("Select your language"), { target: { value: "eng" } });
     fireEvent.click(screen.getByRole("button", { name: "I understand — begin session" }));
-    fireEvent.click(screen.getByRole("button", { name: "Continue anonymously" }));
+    fireEvent.click(screen.getByRole("button", { name: "Allow identified support" }));
 
-    expect(screen.getByText(/This session is anonymous/i)).toBeInTheDocument();
+    expect(screen.getByText(/Identified support is allowed only/i)).toBeInTheDocument();
   });
 
   it("requires country and language before starting", () => {

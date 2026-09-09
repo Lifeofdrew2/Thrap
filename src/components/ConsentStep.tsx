@@ -1,12 +1,12 @@
 import type { AppCopy } from "../app/i18n";
 
 interface ConsentStepProps {
-  onContinue: () => void;
+  onChoose: (identified: boolean) => void;
   onBack: () => void;
   copy: AppCopy;
 }
 
-export function ConsentStep({ onContinue, onBack, copy }: ConsentStepProps) {
+export function ConsentStep({ onChoose, onBack, copy }: ConsentStepProps) {
   return (
     <main className="page-wrap consent" aria-labelledby="consent-heading">
       <button className="text-button back-button" type="button" onClick={onBack}>
@@ -16,8 +16,11 @@ export function ConsentStep({ onContinue, onBack, copy }: ConsentStepProps) {
       <h1 id="consent-heading">{copy.consentHeading}</h1>
       <p className="consent-body">{copy.consentBody}</p>
       <div className="choice-row">
-        <button className="primary-button" type="button" onClick={onContinue}>
+        <button className="primary-button" type="button" onClick={() => onChoose(false)}>
           {copy.anonymous}
+        </button>
+        <button className="secondary-button" type="button" onClick={() => onChoose(true)}>
+          {copy.identified}
         </button>
       </div>
       <p className="privacy-note">{copy.privacyNote}</p>

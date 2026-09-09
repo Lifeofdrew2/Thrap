@@ -21,9 +21,9 @@ export function PrivacySummary({ onClose, onBack, copy }: PrivacySummaryProps) {
           or third-party services.
         </p>
         <p>
-          This service does not collect names, email addresses, phone numbers, or other identifying
-          details. Human-support links open an external phone or organisation-approved route if you
-          choose to contact someone.
+          Identified support is optional. If you choose a future booking or follow-up route, the app
+          will explain what details are needed before collecting anything. Human-support links open
+          an external phone or organisation-approved route.
         </p>
         <p>
           <strong>Escalation records</strong> contain only the minimum information needed for a

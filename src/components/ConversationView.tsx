@@ -30,9 +30,10 @@ interface ConversationViewProps {
   disabled: boolean;
   isTyping: boolean;
   copy: AppCopy;
+  identifiedProcessing: boolean;
 }
 
-export function ConversationView({ messages, turn, onSubmit, onShortcut, disabled, isTyping, copy }: ConversationViewProps) {
+export function ConversationView({ messages, turn, onSubmit, onShortcut, disabled, isTyping, copy, identifiedProcessing }: ConversationViewProps) {
   const remaining = Math.max(turn.limit - turn.used, 0);
 
   const [draft, setDraft] = useState("");
@@ -103,7 +104,9 @@ export function ConversationView({ messages, turn, onSubmit, onShortcut, disable
           {remaining} {remaining === 1 ? copy.exchangeOne : copy.exchangeMany}
         </span>
       </div>
-      <p className="privacy-note processing-mode-note">{copy.anonymousModeNote}</p>
+      <p className="privacy-note processing-mode-note">
+        {identifiedProcessing ? copy.identifiedModeNote : copy.anonymousModeNote}
+      </p>
 
       {messages.length === 0 ? (
         <>

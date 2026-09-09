@@ -26,7 +26,7 @@ These rules are enforced in component boundaries and tests, not only in copy:
 6. No factual answer renders without citations. In development, an uncited factual response is a visible defect and a test failure; in production it routes to escalation.
 7. Every state has a human route. There is no generic error-only state.
 8. No conversation content is written to localStorage, sessionStorage, IndexedDB, URL parameters, browser history, analytics, telemetry, console output, or third-party services.
-9. Anonymous navigation is the only in-app processing mode.
+9. Anonymous navigation is the default; identified support requires explicit optional consent.
 10. The turn limit concludes the session; it cannot be bypassed by starting another chat from the same client flow.
 11. Presented content is never conversation. The module reader and the guidance reader have no composer, no reply region, and no affordance implying the system will respond to what a person writes.
 12. A reflection never produces a response. Submitting one changes the interface only by accepting it. It never renders an acknowledgement, interpretation, summary, encouragement, or follow-up prompt.
@@ -333,13 +333,13 @@ The first screen contains four short sections:
 - **What this service can do:** find approved resources, explain organisation-provided policy, help request a booking, and connect the user to a person.
 - **What it cannot do:** it is not a therapist, crisis service, diagnostic service, or medical adviser.
 - **Who to contact instead:** `[NAMED HUMAN ROLE]` through `[ORG-APPROVED CHANNEL]`; immediate-danger wording is approved by the organisation before release.
-- **What is recorded:** anonymous navigation is not stored as identifiable conversation; identifying details are not collected; operational escalation records and retention are explained plainly.
+- **What is recorded:** anonymous navigation is not stored as identifiable conversation; identified support is optional and limited to a later booking or follow-up step; operational escalation records and retention are explained plainly.
 
-The user must acknowledge the framing and confirm anonymous use to enter the service.
+The user must acknowledge the framing and choose either anonymous use or optional identified support to enter the service.
 
 ### Consent
 
-The consent screen has one action: `Continue anonymously`. The notice says that names, email addresses, phone numbers, and other identifying details are not collected. Emergency and human-support links open external phone or organisation-approved routes.
+The consent screen offers `Stay anonymous` and `Allow identified support`. The notice says identified support does not collect details at this step and is only for a later booking or follow-up route. Emergency and human-support links open external phone or organisation-approved routes.
 
 A privacy summary is reachable from the shell, onboarding, consent, conversation, and terminal states. It opens as a full accessible page or non-dismissible route, not a buried footer. It contains the short summary and a link/reference to the approved full notice.
 
@@ -398,11 +398,13 @@ These are proposed product words, deliberately plain. Organisation-specific valu
 
 ### Consent
 
-**Heading:** `Use this service anonymously`
+**Heading:** `Choose your privacy`
 
-**Body:** `You can use this service anonymously. We do not collect names, email addresses, phone numbers, or other identifying details.`
+**Body:** `Anonymous is the default. Identified support is optional and only applies if you later choose a booking or follow-up route.`
 
-**Primary choice:** `Continue anonymously`
+**Primary choice:** `Stay anonymous`
+
+**Optional choice:** `Allow identified support`
 
 **Privacy link:** `Read the privacy summary`
 

@@ -17,6 +17,7 @@ import "./styles/index.css";
 export function App() {
   const [stage, setStage] = useState<"onboarding" | "consent" | "ready" | "privacy">("onboarding");
   const [privacyReturnStage, setPrivacyReturnStage] = useState<"onboarding" | "consent" | "ready">("ready");
+  const [identifiedProcessing, setIdentifiedProcessing] = useState(false);
   const [humanRouteReturnStage, setHumanRouteReturnStage] = useState<"onboarding" | "consent" | "ready">("ready");
   const [region, setRegion] = useState<Region | "">("");
   const [language, setLanguage] = useState<ConversationLanguage>("eng");
@@ -125,6 +126,7 @@ export function App() {
   function clearSession() {
     setStage("onboarding");
     setPrivacyReturnStage("ready");
+    setIdentifiedProcessing(false);
     setHumanRouteReturnStage("ready");
     setTerminalCanGoBack(false);
     setTerminal(null);
@@ -180,7 +182,7 @@ export function App() {
         <ConsentStep
           copy={copy}
           onBack={() => setStage("onboarding")}
-          onContinue={() => setStage("ready")}
+          onChoose={(identified) => { setIdentifiedProcessing(identified); setStage("ready"); }}
         />
       )}
       {!terminalView && stage === "privacy" && (
@@ -192,6 +194,7 @@ export function App() {
           turn={turn}
           disabled={submitting}
           isTyping={isTyping}
+          identifiedProcessing={identifiedProcessing}
           onShortcut={(intent) => void submitNavigation({ intent })}
           onSubmit={(message) => void submitNavigation({ message })}
           copy={copy}

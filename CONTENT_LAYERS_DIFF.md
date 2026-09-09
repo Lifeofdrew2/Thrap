@@ -290,7 +290,7 @@ Reviewable diff against the pre-change documents. Design only; no implementation
  ## 2. Frontend invariants
 @@ -24,6 +28,11 @@
  8. No conversation content is written to localStorage, sessionStorage, IndexedDB, URL parameters, browser history, analytics, telemetry, console output, or third-party services.
-9. Anonymous navigation is the only in-app processing mode.
+9. Anonymous navigation is the default; identified support requires explicit optional consent.
  10. The turn limit concludes the session; it cannot be bypassed by starting another chat from the same client flow.
 +11. Presented content is never conversation. The module reader and the guidance reader have no composer, no reply region, and no affordance implying the system will respond to what a person writes.
 +12. A reflection never produces a response. Submitting one changes the interface only by accepting it. It never renders an acknowledgement, interpretation, summary, encouragement, or follow-up prompt.
