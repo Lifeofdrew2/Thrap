@@ -82,12 +82,19 @@ p { line-height: 1.65; }
   gap: 0.625rem;
 }
 
+.header-logo-wrap {
+  width: 3.25rem;
+  height: 2.75rem;
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
 .header-logo {
   display: block;
-  width: 4.25rem;
-  height: 3rem;
+  width: 3.25rem;
+  height: auto;
   object-fit: contain;
-  object-position: center;
+  object-position: top center;
 }
 
 .header-brand-dot {
@@ -104,8 +111,8 @@ p { line-height: 1.65; }
 }
 
 .service-mark {
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 1.05rem;
+  font-weight: 700;
   letter-spacing: 0.01em;
   color: var(--sage-700);
 }
