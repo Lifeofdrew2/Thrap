@@ -6,7 +6,6 @@ import type { EscalationResponse, TurnState } from "./api/types";
 import type { ConversationLanguage, NavigationInput, Region } from "./api/types";
 import { localHumanRoute } from "./app/client-config";
 import { getAppCopy, type AppCopy } from "./app/i18n";
-import { ConsentStep } from "./components/ConsentStep";
 import { ConversationView, type ConversationMessage } from "./components/ConversationView";
 import { EscalationScreen } from "./components/EscalationScreen";
 import { OnboardingScreen } from "./components/OnboardingScreen";
@@ -15,10 +14,10 @@ import { TurnLimitNotice } from "./components/TurnLimitNotice";
 import "./styles/index.css";
 
 export function App() {
-  const [stage, setStage] = useState<"onboarding" | "consent" | "ready" | "privacy">("onboarding");
-  const [privacyReturnStage, setPrivacyReturnStage] = useState<"onboarding" | "consent" | "ready">("ready");
+  const [stage, setStage] = useState<"onboarding" | "ready" | "privacy">("onboarding");
+  const [privacyReturnStage, setPrivacyReturnStage] = useState<"onboarding" | "ready">("ready");
   const [identifiedProcessing, setIdentifiedProcessing] = useState(false);
-  const [humanRouteReturnStage, setHumanRouteReturnStage] = useState<"onboarding" | "consent" | "ready">("ready");
+  const [humanRouteReturnStage, setHumanRouteReturnStage] = useState<"onboarding" | "ready">("ready");
   const [region, setRegion] = useState<Region | "">("");
   const [language, setLanguage] = useState<ConversationLanguage>("eng");
   const [languageName, setLanguageName] = useState("English");
@@ -151,8 +150,7 @@ export function App() {
     <div className="app-shell">
       <header className="app-header">
         <div className="header-brand">
-          <span className="header-brand-dot" aria-hidden="true" />
-          <p className="service-mark">Thrap</p>
+          <img className="header-logo" src="/logo.png" alt="Thrap" />
         </div>
         <div className="header-actions">
           {!terminal && !turnLimitRoute && stage !== "privacy" && (
@@ -175,14 +173,7 @@ export function App() {
           copy={copy}
           translationLoading={translationLoading}
           onLanguageChange={(nextLanguage, nextLanguageName) => void changeLanguage(nextLanguage, nextLanguageName)}
-          onAcknowledge={(settings) => { setRegion(settings.region); setLanguage(settings.language); setLanguageName(settings.languageName); setStage("consent"); }}
-        />
-      )}
-      {!terminalView && stage === "consent" && (
-        <ConsentStep
-          copy={copy}
-          onBack={() => setStage("onboarding")}
-          onChoose={(identified) => { setIdentifiedProcessing(identified); setStage("ready"); }}
+          onAcknowledge={(settings) => { setRegion(settings.region); setLanguage(settings.language); setLanguageName(settings.languageName); setIdentifiedProcessing(settings.identified); setStage("ready"); }}
         />
       )}
       {!terminalView && stage === "privacy" && (

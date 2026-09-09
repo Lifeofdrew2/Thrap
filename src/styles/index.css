@@ -82,6 +82,14 @@ p { line-height: 1.65; }
   gap: 0.625rem;
 }
 
+.header-logo {
+  display: block;
+  width: 4.25rem;
+  height: 3rem;
+  object-fit: contain;
+  object-position: center;
+}
+
 .header-brand-dot {
   width: 8px;
   height: 8px;
