@@ -4,7 +4,7 @@ import { LANGUAGE_OPTIONS, REGION_OPTIONS } from "../app/regions";
 import type { AppCopy } from "../app/i18n";
 
 interface OnboardingScreenProps {
-  onAcknowledge: (settings: { region: Region; language: ConversationLanguage; languageName: string }) => void;
+  onAcknowledge: (settings: { region: Region; language: ConversationLanguage; languageName: string; identified: boolean }) => void;
   onLanguageChange: (language: ConversationLanguage, languageName: string) => void;
   copy: AppCopy;
   translationLoading: boolean;
@@ -13,6 +13,7 @@ interface OnboardingScreenProps {
 export function OnboardingScreen({ onAcknowledge, onLanguageChange, copy, translationLoading }: OnboardingScreenProps) {
   const [region, setRegion] = useState<Region | "">("");
   const [language, setLanguage] = useState<ConversationLanguage | "">("");
+  const [identified, setIdentified] = useState(false);
   return (
     <main className="page-wrap onboarding" aria-labelledby="onboarding-heading">
       <p className="eyebrow">{copy.welcomeEyebrow}</p>
@@ -74,6 +75,20 @@ export function OnboardingScreen({ onAcknowledge, onLanguageChange, copy, transl
         </div>
       </div>
 
+      <section className="onboarding-privacy" aria-labelledby="privacy-choice-heading">
+        <p className="eyebrow">{copy.consentEyebrow}</p>
+        <h2 id="privacy-choice-heading">{copy.consentHeading}</h2>
+        <p className="consent-body">{copy.consentBody}</p>
+        <div className="choice-row">
+          <button className={!identified ? "primary-button" : "secondary-button"} type="button" onClick={() => setIdentified(false)} aria-pressed={!identified}>
+            {copy.anonymous}
+          </button>
+          <button className={identified ? "primary-button" : "secondary-button"} type="button" onClick={() => setIdentified(true)} aria-pressed={identified}>
+            {copy.identified}
+          </button>
+        </div>
+      </section>
+
       <button
         className="primary-button"
         type="button"
@@ -84,6 +99,7 @@ export function OnboardingScreen({ onAcknowledge, onLanguageChange, copy, transl
             region,
             language,
             languageName: LANGUAGE_OPTIONS.find((option) => option.value === language)?.label ?? language,
+            identified,
           });
         }}
       >

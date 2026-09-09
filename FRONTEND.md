@@ -112,7 +112,7 @@ The API contract is generated from the backend OpenAPI schema or checked in as a
 
 `AppShell` owns the persistent privacy summary link, the always-visible `Talk to a person` control, and the session lifecycle. It never owns message interpretation.
 
-`OnboardingScreen` is shown on first use for the current browser session. It states the service limits, recording model, and human route before input is available. The person explicitly selects a country and language before continuing. `ConsentStep` confirms anonymous use; the product does not collect identifying details.
+`OnboardingScreen` is shown on first use for the current browser session. It states the service limits, recording model, and human route before input is available. The person explicitly selects a country, language, and privacy mode on this same screen before continuing directly to the conversation.
 
 `ConversationView` renders either the empty-state shortcut directory or the bounded conversation. `MessageList` renders ordinary user messages and validated answers. `AgentAnswer` requires citations for factual content. `RefusalNotice` is a non-chat policy response with a human route. `TurnLimitNotice` transitions to a terminal conclusion rather than adding another prompt.
 
@@ -152,8 +152,7 @@ Use an explicit discriminated union or state machine. TanStack Query manages req
 
 ```text
 ONBOARDING
-  -> CONSENT_REQUIRED
-  -> READY_ANONYMOUS
+  -> READY_ANONYMOUS / READY_IDENTIFIED
 
 READY_ANONYMOUS
   -> SUBMITTING
