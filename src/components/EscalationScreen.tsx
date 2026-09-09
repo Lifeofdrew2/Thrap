@@ -27,7 +27,6 @@ export function EscalationScreen({ humanRoute = localHumanRoute, region, onBack,
             <span aria-hidden="true">←</span> {copy.back}
           </button>
         )}
-        <p className="eyebrow">{copy.humanSupportEyebrow}</p>
         <h1 id="escalation-heading" ref={headingRef} tabIndex={-1}>
           {copy.escalationHeading}
         </h1>
@@ -68,7 +67,6 @@ export function EscalationScreen({ humanRoute = localHumanRoute, region, onBack,
           <span className="human-route__label">{copy.contact} {humanRoute.role}</span>
           <span className="human-route__channel">via {humanRoute.channelLabel}</span>
         </a>
-        <p className="terminal-state__note">{copy.escalationNote}</p>
       </div>
     </main>
   );

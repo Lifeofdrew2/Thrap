@@ -61,7 +61,6 @@ export interface AppCopy {
   turnLimitHeading: string;
   turnLimitBody: string;
   connectCounsellor: string;
-  humanSupportEyebrow: string;
   escalationHeading: string;
   escalationBody: string;
   emergencyServices: string;
@@ -69,7 +68,6 @@ export interface AppCopy {
   maniHelpline: string;
   maniHelplineBody: string;
   contact: string;
-  escalationNote: string;
 }
 
 const ENGLISH_COPY: AppCopy = {
@@ -141,15 +139,13 @@ const ENGLISH_COPY: AppCopy = {
   turnLimitHeading: "You've reached the end of this session",
   turnLimitBody: "Thank you for opening up today. Continuing this conversation with a trained professional can help you go deeper. A licensed counsellor is here to support you.",
   connectCounsellor: "Connect with",
-  humanSupportEyebrow: "Human support route",
-  escalationHeading: "Let's get you real support",
-  escalationBody: "It sounds like what you're going through deserves more than I can safely offer here. A licensed counsellor is available now and can provide the professional care you deserve.",
+  escalationHeading: "Contact support now",
+  escalationBody: "This service cannot safely help with this. Use an emergency number or human support below.",
   emergencyServices: "Nigeria emergency support",
   emergencyServicesBody: "Call 112 or 767 if you are in immediate danger or need urgent help.",
   maniHelpline: "MANI helpline",
   maniHelplineBody: "Call 0809 210 6493. The Mentally Aware Nigeria Initiative helpline is available Monday to Friday.",
   contact: "Contact",
-  escalationNote: "This session is closed. Your wellbeing matters — please reach out to the human support below.",
 };
 
 const PIDGIN_COPY: AppCopy = {
@@ -222,15 +218,13 @@ const PIDGIN_COPY: AppCopy = {
   turnLimitHeading: "You don reach the end of this session",
   turnLimitBody: "Thank you say you open up today. Talking with trained professional fit help you go deeper. Licensed counsellor dey here to support you.",
   connectCounsellor: "Connect with",
-  humanSupportEyebrow: "Human support route",
-  escalationHeading: "Make we connect you to real support",
-  escalationBody: "Wetin you dey go through need more than wetin I fit safely offer here. Licensed counsellor dey available now to give you the professional care wey you deserve.",
+  escalationHeading: "Contact support now",
+  escalationBody: "This service no fit safely help with this. Use emergency number or human support below.",
   emergencyServices: "Nigeria emergency support",
   emergencyServicesBody: "Call 112 or 767 if you dey immediate danger or need urgent help.",
   maniHelpline: "MANI helpline",
   maniHelplineBody: "Call 0809 210 6493. Mentally Aware Nigeria Initiative helpline dey available Monday to Friday.",
   contact: "Contact",
-  escalationNote: "This session don close. Your wellbeing matter — abeg reach out to the human support below.",
 };
 
 export function getAppCopy(language: ConversationLanguage): AppCopy {

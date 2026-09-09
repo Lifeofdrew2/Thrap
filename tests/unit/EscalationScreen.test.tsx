@@ -7,7 +7,7 @@ describe("EscalationScreen", () => {
   it("renders the reviewed terminal structure", () => {
     render(<EscalationScreen copy={getAppCopy("eng")} region="NG" />);
 
-    expect(screen.getByRole("heading", { name: "Let's get you real support" })).toHaveFocus();
+    expect(screen.getByRole("heading", { name: "Contact support now" })).toHaveFocus();
     expect(screen.getByRole("link", { name: /112.*emergency services/i })).toHaveAttribute("href", "tel:112");
     expect(screen.getByRole("link", { name: /767.*emergency services/i })).toHaveAttribute("href", "tel:767");
     expect(screen.getByRole("link", { name: /0809 210 6493.*mani helpline/i })).toHaveAttribute("href", "tel:08092106493");
