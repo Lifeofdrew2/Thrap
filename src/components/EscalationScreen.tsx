@@ -31,6 +31,7 @@ export function EscalationScreen({ humanRoute = localHumanRoute, region, onBack,
           {copy.escalationHeading}
         </h1>
         <p className="terminal-state__body">{copy.escalationBody}</p>
+        <p className="terminal-state__grounding">{copy.escalationGrounding}</p>
         <section className="support-options" aria-labelledby="urgent-support-heading">
           <h2 id="urgent-support-heading">{support.emergencyLabel}</h2>
           <p>{support.emergencyBody}</p>
@@ -59,6 +60,8 @@ export function EscalationScreen({ humanRoute = localHumanRoute, region, onBack,
             </>
           )}
         </section>
+        <p className="terminal-state__body">{copy.escalationTrustedContact}</p>
+        <p className="terminal-state__closing">{copy.escalationClosing}</p>
         <a
           className="human-route"
           href={humanRoute.actionTarget}

@@ -814,6 +814,27 @@ h1 {
   margin-bottom: 0.5rem;
 }
 
+.terminal-state__grounding {
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--sage-800);
+  background: var(--sage-100);
+  border: 1px solid var(--sage-200);
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1.1rem;
+  max-width: 38rem;
+  margin: 0.75rem 0 1.25rem;
+}
+
+.terminal-state__closing {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--stone-700);
+  max-width: 38rem;
+  margin: 0.5rem 0 1rem;
+}
+
 .human-route {
   display: flex;
   flex-direction: column;
