@@ -56,7 +56,11 @@ describe("App framing", () => {
     expect(screen.getByRole("button", { name: "I understand — begin session" })).toBeEnabled();
   });
 
-  it("explains the selected processing mode in the conversation", () => {
+  it("asks an identified person to sign up or log in before entering the conversation", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ ok: true, email: "person@example.com" }),
+    })));
     render(<App />);
 
     fireEvent.change(screen.getByLabelText("Select your country"), { target: { value: "NG" } });
@@ -64,6 +68,13 @@ describe("App framing", () => {
     fireEvent.click(screen.getByRole("button", { name: "Allow identified support" }));
     fireEvent.click(screen.getByRole("button", { name: "I understand — begin session" }));
 
+    expect(screen.getByRole("heading", { name: "Sign up" })).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "person@example.com" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "correct-horse" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
+    expect(await screen.findByRole("heading", { name: "How are you feeling today?" })).toBeInTheDocument();
     expect(screen.getByText(/Identified support is allowed only/i)).toBeInTheDocument();
   });
 

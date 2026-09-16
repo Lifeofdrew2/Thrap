@@ -1,13 +1,20 @@
 import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import {
+  attachUser,
   configFromEnv,
   createSessionId,
   createThrapApi,
   getSession,
+  parseAuthInput,
   type ThrapConfig,
 } from "./src/server/api";
 import { buildRetriever } from "./src/server/knowledge";
+import {
+  buildAuthClearCookie,
+  buildAuthCookie,
+  resolveUserId,
+} from "./src/server/cookies";
 
 /**
  * Dev-server API.
@@ -53,6 +60,27 @@ function therapyApiPlugin(config: ThrapConfig): Plugin {
         if (req.url === "/api/session/clear") { send(api.clear(devSessionId)); return; }
         if (req.url === "/api/human-route")   { send(api.humanRoute()); return; }
 
+        if (req.url === "/api/auth/signup" || req.url === "/api/auth/login") {
+          const chunks: Buffer[] = [];
+          for await (const chunk of req) chunks.push(chunk as Buffer);
+          const parsed = parseAuthInput(JSON.parse(Buffer.concat(chunks).toString() || "{}"));
+          if (!parsed) { send({ status: 400, body: { error: "invalid_request" } }); return; }
+
+          const result = req.url === "/api/auth/signup"
+            ? api.signup(parsed.email, parsed.password)
+            : api.login(parsed.email, parsed.password);
+          if (result.userId) res.setHeader("Set-Cookie", buildAuthCookie(result.userId));
+          send({ status: result.status, body: result.body });
+          return;
+        }
+        if (req.url === "/api/auth/logout") {
+          res.setHeader("Set-Cookie", buildAuthClearCookie());
+          send({ status: 200, body: { ok: true } });
+          return;
+        }
+        if (req.url === "/api/auth/me") { send(api.me(resolveUserId(req))); return; }
+        if (req.url === "/api/history") { send(api.history(resolveUserId(req))); return; }
+
         if (req.url === "/api/translate-ui") {
           const chunks: Buffer[] = [];
           for await (const chunk of req) chunks.push(chunk as Buffer);
@@ -73,7 +101,9 @@ function therapyApiPlugin(config: ThrapConfig): Plugin {
             intent?: string;
           };
 
-          send(await api.navigate(body, getSession(devSessionId)));
+          const session = getSession(devSessionId);
+          attachUser(session, resolveUserId(req));
+          send(await api.navigate(body, session));
           return;
         }
 

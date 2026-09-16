@@ -11,22 +11,28 @@ import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import path from "node:path";
 import {
+  attachUser,
   configFromEnv,
   createSessionId,
   createThrapApi,
   getSession,
+  parseAuthInput,
   parseNavigationInput,
   type ApiResult,
 } from "./api";
 import { buildRetriever } from "./knowledge";
+import {
+  buildAuthClearCookie,
+  buildAuthCookie,
+  buildSessionCookie,
+  readCookie,
+  resolveUserId,
+  SESSION_COOKIE_NAME,
+} from "./cookies";
 
 const PORT = Number(process.env.PORT ?? 5180);
 const HOST = process.env.HOST ?? "0.0.0.0";
 const CLIENT_DIR = path.resolve(process.cwd(), process.env.CLIENT_DIR ?? "dist");
-
-/** Session cookie. Opaque id only — never conversation content. */
-const COOKIE_NAME = "thrap_sid";
-const COOKIE_MAX_AGE = 60 * 60;
 
 const config = configFromEnv(process.env);
 const api = createThrapApi(config, buildRetriever);
@@ -44,15 +50,12 @@ const MIME: Record<string, string> = {
   ".json": "application/json; charset=utf-8",
 };
 
-function readCookie(req: IncomingMessage, name: string): string | null {
-  const header = req.headers.cookie;
-  if (!header) return null;
-
-  for (const part of header.split(";")) {
-    const [key, ...rest] = part.trim().split("=");
-    if (key === name) return decodeURIComponent(rest.join("="));
-  }
-  return null;
+/** Multiple Set-Cookie headers must coexist; res.setHeader alone overwrites. */
+function appendSetCookie(res: ServerResponse, cookie: string): void {
+  const existing = res.getHeader("Set-Cookie");
+  if (!existing) res.setHeader("Set-Cookie", cookie);
+  else if (Array.isArray(existing)) res.setHeader("Set-Cookie", [...existing, cookie]);
+  else res.setHeader("Set-Cookie", [String(existing), cookie]);
 }
 
 /**
@@ -63,15 +66,11 @@ function readCookie(req: IncomingMessage, name: string): string | null {
  * so plain-HTTP development still works.
  */
 function resolveSession(req: IncomingMessage, res: ServerResponse): string {
-  const existing = readCookie(req, COOKIE_NAME);
+  const existing = readCookie(req, SESSION_COOKIE_NAME);
   if (existing) return existing;
 
   const id = createSessionId();
-  const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
-  res.setHeader(
-    "Set-Cookie",
-    `${COOKIE_NAME}=${id}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${COOKIE_MAX_AGE}${secure}`,
-  );
+  appendSetCookie(res, buildSessionCookie(id));
   return id;
 }
 
@@ -170,6 +169,32 @@ const server = createServer(async (req, res) => {
         sendJson(res, api.humanRoute());
         return;
       }
+      if (urlPath === "/api/auth/signup" || urlPath === "/api/auth/login") {
+        const parsed = parseAuthInput(await readJsonBody(req));
+        if (!parsed) {
+          sendJson(res, { status: 400, body: { error: "invalid_request" } });
+          return;
+        }
+        const result = urlPath === "/api/auth/signup"
+          ? api.signup(parsed.email, parsed.password)
+          : api.login(parsed.email, parsed.password);
+        if (result.userId) appendSetCookie(res, buildAuthCookie(result.userId));
+        sendJson(res, { status: result.status, body: result.body });
+        return;
+      }
+      if (urlPath === "/api/auth/logout") {
+        appendSetCookie(res, buildAuthClearCookie());
+        sendJson(res, { status: 200, body: { ok: true } });
+        return;
+      }
+      if (urlPath === "/api/auth/me") {
+        sendJson(res, api.me(resolveUserId(req)));
+        return;
+      }
+      if (urlPath === "/api/history") {
+        sendJson(res, api.history(resolveUserId(req)));
+        return;
+      }
       if (urlPath === "/api/translate-ui") {
         const body = await readJsonBody(req) as { languageCode?: string; languageName?: string; copy?: Record<string, unknown> };
         sendJson(res, await api.translateUi({ languageCode: body.languageCode ?? "", languageName: body.languageName ?? "", copy: body.copy ?? {} }));
@@ -181,7 +206,9 @@ const server = createServer(async (req, res) => {
           sendJson(res, { status: 400, body: { error: "invalid_request" } });
           return;
         }
-        sendJson(res, await api.navigate(body, getSession(sessionId)));
+        const session = getSession(sessionId);
+        attachUser(session, resolveUserId(req));
+        sendJson(res, await api.navigate(body, session));
         return;
       }
 

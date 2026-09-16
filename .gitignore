@@ -2,6 +2,7 @@ node_modules/
 dist/
 dist-server/
 knowledge/.index.json
+data/
 test-results/
 playwright-report/
 *.tsbuildinfo

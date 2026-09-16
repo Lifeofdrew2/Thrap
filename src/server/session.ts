@@ -22,6 +22,10 @@ export interface Session {
   turnCount: number;
   fallbackIndex: number;
   lastSeen: number;
+  /** Set only for identified, logged-in accounts. Null for anonymous sessions. */
+  userId: string | null;
+  /** Whether this session's history has been seeded from the database yet. */
+  historyHydrated: boolean;
 }
 
 /** Idle sessions are dropped so abandoned conversations do not linger in memory. */
@@ -31,12 +35,12 @@ const SESSION_TTL_MS = 60 * 60 * 1000;
 const MAX_SESSIONS = 5_000;
 
 /** Turns kept in context. Twenty exchanges, as two entries each. */
-const MAX_HISTORY_ENTRIES = 40;
+export const MAX_HISTORY_ENTRIES = 40;
 
 const sessions = new Map<string, Session>();
 
 function newSession(): Session {
-  return { history: [], turnCount: 0, fallbackIndex: 0, lastSeen: Date.now() };
+  return { history: [], turnCount: 0, fallbackIndex: 0, lastSeen: Date.now(), userId: null, historyHydrated: false };
 }
 
 /** Drop expired sessions, then the oldest if still over the cap. */
@@ -71,6 +75,18 @@ export function getSession(id: string): Session {
 /** Discard a session's contents. Called by the clear-session endpoint. */
 export function clearSession(id: string): void {
   sessions.delete(id);
+}
+
+/**
+ * Link a session to a logged-in account. Switching to a different account
+ * (or logging in mid-session) drops any hydrated history so the next turn
+ * reloads the correct person's history rather than mixing the two.
+ */
+export function attachUser(session: Session, userId: string | null): void {
+  if (session.userId !== userId) {
+    session.userId = userId;
+    session.historyHydrated = false;
+  }
 }
 
 export function recordExchange(session: Session, userMessage: string, modelReply: string): void {

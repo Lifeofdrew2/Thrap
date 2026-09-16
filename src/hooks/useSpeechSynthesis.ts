@@ -20,50 +20,84 @@ export interface SpeechSynthesisState {
   cancel(): void;
 }
 
-export function useSpeechSynthesis(): SpeechSynthesisState {
+/** Voices marked "Online (Natural)"/neural sound far less robotic than the
+ *  default compact voices most browsers ship, so they are preferred whenever
+ *  the device has them installed (Edge/Windows and recent Chrome do). */
+const NEURAL_HINT = /online|natural|neural/i;
+
+function splitIntoSentences(text: string): string[] {
+  const matches = text.match(/[^.!?]+[.!?]*\s*/g);
+  return (matches ?? [text]).map((sentence) => sentence.trim()).filter(Boolean);
+}
+
+export function useSpeechSynthesis(initialGender: "female" | "male" = "female"): SpeechSynthesisState {
   const [speaking, setSpeaking] = useState(false);
-  const [voiceGender, setVoiceGender] = useState<"female" | "male">("female");
+  const [voiceGender, setVoiceGender] = useState<"female" | "male">(initialGender);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const supported = typeof window !== "undefined" && "speechSynthesis" in window;
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const queueRef = useRef<string[]>([]);
+  const speakingRef = useRef(false);
 
   const cancel = useCallback(() => {
     if (!supported) return;
+    queueRef.current = [];
+    speakingRef.current = false;
     window.speechSynthesis.cancel();
     setSpeaking(false);
   }, [supported]);
 
+  const speakNext = useCallback((voice: SpeechSynthesisVoice | undefined, gender: "female" | "male") => {
+    const next = queueRef.current.shift();
+    if (!next) {
+      speakingRef.current = false;
+      setSpeaking(false);
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(next);
+    utterance.rate = gender === "male" ? 0.98 : 0.97;
+    utterance.pitch = 1.0;
+    utterance.volume = 1;
+    if (voice) utterance.voice = voice;
+
+    utterance.onend = () => speakNext(voice, gender);
+    utterance.onerror = () => speakNext(voice, gender);
+
+    window.speechSynthesis.speak(utterance);
+  }, []);
+
   const speak = useCallback((text: string) => {
     if (!supported || !text.trim()) return;
 
-    // Never queue: a backlog of replies talking over each other is worse than
-    // losing one, and the person is reading the same text on screen anyway.
+    // Never queue a second reply on top of one already playing: a backlog of
+    // replies talking over each other is worse than losing one, and the
+    // person is reading the same text on screen anyway.
     window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.9;
-    utterance.pitch = 0.98;
-    utterance.volume = 1;
 
     const availableVoices = voices.length > 0 ? voices : window.speechSynthesis.getVoices();
     const englishVoices = availableVoices.filter((voice) => voice.lang.toLowerCase().startsWith("en"));
     const genderNames = voiceGender === "female"
       ? /samantha|jenny|ava|allison|aria|susan|victoria|moira|karen|hazel|libby|google us english female|google uk english female/i
       : /daniel|david|alex|george|mark|james|oliver|arthur|guy|ryan|google us english male|google uk english male/i;
-    const preferred = englishVoices.find((voice) => genderNames.test(voice.name))
+
+    const matchingGender = englishVoices.filter((voice) => genderNames.test(voice.name));
+    const preferred = matchingGender.find((voice) => NEURAL_HINT.test(voice.name))
+      ?? englishVoices.find((voice) => NEURAL_HINT.test(voice.name) && genderNames.test(voice.name))
+      ?? matchingGender[0]
       ?? englishVoices.find((voice) => voice.lang.startsWith("en-GB"))
       ?? englishVoices.find((voice) => voice.lang === "en-NG")
       ?? englishVoices[0]
       ?? availableVoices[0];
-    if (preferred) utterance.voice = preferred;
 
-    utterance.onend = () => setSpeaking(false);
-    utterance.onerror = () => setSpeaking(false);
-
-    utteranceRef.current = utterance;
+    // Speaking sentence-by-sentence (rather than one long utterance) gives the
+    // synthesiser natural breathing gaps between sentences instead of one flat
+    // monotone block, which is the biggest single thing separating it from a
+    // one-shot robotic read of the whole paragraph.
+    queueRef.current = splitIntoSentences(text);
+    speakingRef.current = true;
     setSpeaking(true);
-    window.speechSynthesis.speak(utterance);
-  }, [supported, voiceGender]);
+    speakNext(preferred, voiceGender);
+  }, [supported, voiceGender, voices, speakNext]);
 
   useEffect(() => {
     if (!supported) return;

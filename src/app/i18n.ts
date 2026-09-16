@@ -68,6 +68,22 @@ export interface AppCopy {
   maniHelpline: string;
   maniHelplineBody: string;
   contact: string;
+  authEyebrow: string;
+  authIntro: string;
+  signUpTab: string;
+  logInTab: string;
+  emailLabel: string;
+  passwordLabel: string;
+  passwordHint: string;
+  authContinue: string;
+  authErrorInvalidCredentials: string;
+  authErrorEmailTaken: string;
+  authErrorGeneric: string;
+  authErrorNetwork: string;
+  loggedInAs: string;
+  logOut: string;
+  musicOn: string;
+  musicOff: string;
 }
 
 const ENGLISH_COPY: AppCopy = {
@@ -146,6 +162,22 @@ const ENGLISH_COPY: AppCopy = {
   maniHelpline: "MANI helpline",
   maniHelplineBody: "Call 0809 210 6493. The Mentally Aware Nigeria Initiative helpline is available Monday to Friday.",
   contact: "Contact",
+  authEyebrow: "Identified support",
+  authIntro: "Create an account or log in to keep your conversation history so you can pick it up again later.",
+  signUpTab: "Sign up",
+  logInTab: "Log in",
+  emailLabel: "Email",
+  passwordLabel: "Password",
+  passwordHint: "At least 8 characters",
+  authContinue: "Continue",
+  authErrorInvalidCredentials: "Incorrect email or password.",
+  authErrorEmailTaken: "An account with that email already exists. Try logging in instead.",
+  authErrorGeneric: "Something went wrong. Please try again.",
+  authErrorNetwork: "Couldn't reach the service. Check your connection and try again.",
+  loggedInAs: "Signed in as",
+  logOut: "Log out",
+  musicOn: "Turn off calming music",
+  musicOff: "Play calming music",
 };
 
 const PIDGIN_COPY: AppCopy = {
@@ -225,6 +257,22 @@ const PIDGIN_COPY: AppCopy = {
   maniHelpline: "MANI helpline",
   maniHelplineBody: "Call 0809 210 6493. Mentally Aware Nigeria Initiative helpline dey available Monday to Friday.",
   contact: "Contact",
+  authEyebrow: "Identified support",
+  authIntro: "Create account or log in so your conversation history go dey wait for you when you come back.",
+  signUpTab: "Sign up",
+  logInTab: "Log in",
+  emailLabel: "Email",
+  passwordLabel: "Password",
+  passwordHint: "At least 8 characters",
+  authContinue: "Continue",
+  authErrorInvalidCredentials: "Email or password no correct.",
+  authErrorEmailTaken: "Account with that email dey already. Try log in instead.",
+  authErrorGeneric: "Something no work well. Abeg try again.",
+  authErrorNetwork: "We no fit reach the service. Check your connection and try again.",
+  loggedInAs: "You dey sign in as",
+  logOut: "Log out",
+  musicOn: "Turn off calming music",
+  musicOff: "Play calming music",
 };
 
 export function getAppCopy(language: ConversationLanguage): AppCopy {

@@ -1,11 +1,13 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { requestHumanRoute } from "./api/client";
 import { requestNavigation } from "./api/navigate";
 import { requestTranslatedCopy } from "./api/translate";
+import { requestHistory, requestLogout, requestMe, type AuthUser } from "./api/auth";
 import type { EscalationResponse, TurnState } from "./api/types";
 import type { ConversationLanguage, NavigationInput, Region } from "./api/types";
 import { localHumanRoute } from "./app/client-config";
 import { getAppCopy, type AppCopy } from "./app/i18n";
+import { AuthScreen } from "./components/AuthScreen";
 import { ConversationView, type ConversationMessage } from "./components/ConversationView";
 import { EscalationScreen } from "./components/EscalationScreen";
 import { OnboardingScreen } from "./components/OnboardingScreen";
@@ -13,11 +15,26 @@ import { PrivacySummary } from "./components/PrivacySummary";
 import { TurnLimitNotice } from "./components/TurnLimitNotice";
 import "./styles/index.css";
 
+export type VoiceGender = "female" | "male";
+
+const VOICE_GENDER_STORAGE_KEY = "thrap_voice_gender";
+
+function loadStoredVoiceGender(): VoiceGender {
+  try {
+    const stored = window.localStorage.getItem(VOICE_GENDER_STORAGE_KEY);
+    return stored === "male" ? "male" : "female";
+  } catch {
+    return "female";
+  }
+}
+
 export function App() {
-  const [stage, setStage] = useState<"onboarding" | "ready" | "privacy">("onboarding");
-  const [privacyReturnStage, setPrivacyReturnStage] = useState<"onboarding" | "ready">("ready");
+  const [stage, setStage] = useState<"onboarding" | "auth" | "ready" | "privacy">("onboarding");
+  const [privacyReturnStage, setPrivacyReturnStage] = useState<"onboarding" | "auth" | "ready">("ready");
   const [identifiedProcessing, setIdentifiedProcessing] = useState(false);
-  const [humanRouteReturnStage, setHumanRouteReturnStage] = useState<"onboarding" | "ready">("ready");
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [voiceGender, setVoiceGender] = useState<VoiceGender>(loadStoredVoiceGender);
+  const [humanRouteReturnStage, setHumanRouteReturnStage] = useState<"onboarding" | "auth" | "ready">("ready");
   const [region, setRegion] = useState<Region | "">("");
   const [language, setLanguage] = useState<ConversationLanguage>("eng");
   const [languageName, setLanguageName] = useState("English");
@@ -31,6 +48,41 @@ export function App() {
   const [turnLimitRoute, setTurnLimitRoute] = useState<EscalationResponse["humanRoute"] | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+
+  // Restore a returning logged-in account so choosing "Allow identified
+  // support" again skips straight back to the conversation instead of asking
+  // them to log in a second time on the same browser.
+  useEffect(() => {
+    requestMe()
+      .then(({ user }) => { if (user) setCurrentUser(user); })
+      .catch(() => undefined);
+  }, []);
+
+  function changeVoiceGender(next: VoiceGender) {
+    setVoiceGender(next);
+    try {
+      window.localStorage.setItem(VOICE_GENDER_STORAGE_KEY, next);
+    } catch {
+      // A private/blocked storage context just means the preference resets
+      // next visit; the feature still works for the current one.
+    }
+  }
+
+  async function enterConversation() {
+    try {
+      const { messages: history } = await requestHistory();
+      if (history.length > 0) {
+        setMessages(history.map((entry, index) => ({
+          id: `history-${index}`,
+          author: entry.role === "user" ? "user" : "service",
+          text: entry.content,
+        })));
+      }
+    } catch {
+      // No history is not fatal - the person can still start a fresh conversation.
+    }
+    setStage("ready");
+  }
 
   async function changeLanguage(nextLanguage: ConversationLanguage, nextLanguageName: string) {
     const requestId = ++translationRequest.current;
@@ -135,6 +187,17 @@ export function App() {
     setIsTyping(false);
   }
 
+  async function logOut() {
+    try {
+      await requestLogout();
+    } catch {
+      // The cookie may not have cleared, but there is nothing further to do
+      // client-side; the account view is dropped either way.
+    }
+    setCurrentUser(null);
+    clearSession();
+  }
+
   const terminalView = terminal
     ? <EscalationScreen
         humanRoute={terminal.humanRoute}
@@ -151,10 +214,24 @@ export function App() {
       <header className="app-header">
         <div className="header-brand">
           <span className="header-logo-wrap">
-            <img className="header-logo" src="/logo.png" alt="Thrap" />
+            <img
+              className="header-logo header-avatar"
+              src={voiceGender === "male" ? "/avatar-man.svg" : "/avatar-woman.svg"}
+              alt="Thrap"
+            />
           </span>
         </div>
         <div className="header-actions">
+          {currentUser && (
+            <span className="header-account" title={currentUser.email}>
+              {copy.loggedInAs} {currentUser.email}
+            </span>
+          )}
+          {currentUser && stage !== "privacy" && (
+            <button className="text-button" type="button" onClick={() => void logOut()}>
+              {copy.logOut}
+            </button>
+          )}
           {!terminal && !turnLimitRoute && stage !== "privacy" && (
             <button className="text-button" type="button" onClick={() => { setPrivacyReturnStage(stage); setStage("privacy"); }}>
               {copy.privacy}
@@ -175,7 +252,26 @@ export function App() {
           copy={copy}
           translationLoading={translationLoading}
           onLanguageChange={(nextLanguage, nextLanguageName) => void changeLanguage(nextLanguage, nextLanguageName)}
-          onAcknowledge={(settings) => { setRegion(settings.region); setLanguage(settings.language); setLanguageName(settings.languageName); setIdentifiedProcessing(settings.identified); setStage("ready"); }}
+          onAcknowledge={(settings) => {
+            setRegion(settings.region);
+            setLanguage(settings.language);
+            setLanguageName(settings.languageName);
+            setIdentifiedProcessing(settings.identified);
+            if (settings.identified && !currentUser) {
+              setStage("auth");
+            } else if (settings.identified) {
+              void enterConversation();
+            } else {
+              setStage("ready");
+            }
+          }}
+        />
+      )}
+      {!terminalView && stage === "auth" && (
+        <AuthScreen
+          copy={copy}
+          onBack={() => setStage("onboarding")}
+          onAuthenticated={(email) => { setCurrentUser({ email }); void enterConversation(); }}
         />
       )}
       {!terminalView && stage === "privacy" && (
@@ -191,6 +287,8 @@ export function App() {
           onShortcut={(intent) => void submitNavigation({ intent })}
           onSubmit={(message) => void submitNavigation({ message })}
           copy={copy}
+          voiceGender={voiceGender}
+          onVoiceGenderChange={changeVoiceGender}
         />
       )}
 

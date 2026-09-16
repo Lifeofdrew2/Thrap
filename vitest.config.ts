@@ -7,5 +7,8 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./tests/setup.ts"],
     include: ["tests/unit/**/*.test.{ts,tsx}", "tests/integration/**/*.test.{ts,tsx}"],
+    // Never write a real database file from tests, and keep cookie signing
+    // deterministic without needing a real AUTH_SECRET in CI.
+    env: { DB_PATH: ":memory:", AUTH_SECRET: "test-secret" },
   },
 });

@@ -23,9 +23,18 @@ import {
   clearSession,
   getSession,
   recordExchange,
+  MAX_HISTORY_ENTRIES,
   type ChatMessage,
   type Session,
 } from "./session";
+import {
+  appendMessage,
+  createUser,
+  EmailAlreadyRegisteredError,
+  getUserById,
+  loadHistory,
+  verifyCredentials,
+} from "./db";
 
 // --- Configuration ---------------------------------------------------------
 
@@ -301,16 +310,32 @@ export function parseNavigationInput(input: Record<string, unknown>): Navigation
   return parsed.success ? parsed.data : null;
 }
 
+const authInputSchema = z.object({
+  email: z.string().trim().min(3).max(200).email(),
+  password: z.string().min(8).max(200),
+});
+
+export function parseAuthInput(input: Record<string, unknown>): { email: string; password: string } | null {
+  const parsed = authInputSchema.safeParse(input);
+  return parsed.success ? parsed.data : null;
+}
+
 const escalation = (reasonCode: string): ApiResult => ({
   status: 200,
   body: { kind: "escalation", message: "", reasonCode, humanRoute: HUMAN_ROUTE },
 });
+
+export type AuthResult = { status: number; body: unknown; userId?: string };
 
 export interface ThrapApi {
   navigate(input: NavigationInput, session: Session): Promise<ApiResult>;
   translateUi(input: { languageCode: string; languageName: string; copy: Record<string, unknown> }): Promise<ApiResult>;
   humanRoute(): ApiResult;
   clear(sessionId: string): ApiResult;
+  signup(email: string, password: string): AuthResult;
+  login(email: string, password: string): AuthResult;
+  me(userId: string | null): ApiResult;
+  history(userId: string | null): ApiResult;
   ready(): Promise<Retriever>;
   readonly hasKey: boolean;
 }
@@ -366,6 +391,36 @@ export function createThrapApi(
       return { status: 200, body: { ok: true } };
     },
 
+    signup(email, password) {
+      try {
+        const user = createUser(email, password);
+        return { status: 200, body: { ok: true, email: user.email }, userId: user.id };
+      } catch (error) {
+        if (error instanceof EmailAlreadyRegisteredError) {
+          return { status: 409, body: { error: "email_already_registered" } };
+        }
+        console.error("[Thrap] Signup failed:", error instanceof Error ? error.message : error);
+        return { status: 500, body: { error: "signup_failed" } };
+      }
+    },
+
+    login(email, password) {
+      const user = verifyCredentials(email, password);
+      if (!user) return { status: 401, body: { error: "invalid_credentials" } };
+      return { status: 200, body: { ok: true, email: user.email }, userId: user.id };
+    },
+
+    me(userId) {
+      const user = userId ? getUserById(userId) : null;
+      return { status: 200, body: { user: user ? { email: user.email } : null } };
+    },
+
+    history(userId) {
+      if (!userId) return { status: 200, body: { messages: [] } };
+      const messages = loadHistory(userId, MAX_HISTORY_ENTRIES);
+      return { status: 200, body: { messages } };
+    },
+
     async navigate(input, session) {
       // Resolve the user-facing message (shortcut intents -> natural language)
       const userMessage = input.message?.trim() ||
@@ -376,6 +431,15 @@ export function createThrapApi(
       if (CRISIS_SIGNALS.some((s) => lc.includes(s))) return escalation("crisis");
 
       session.turnCount++;
+
+      // Seed an identified account's in-memory history from its stored
+      // conversation once per session, so the model has continuity across a
+      // refresh or a new device without re-reading the database every turn.
+      if (session.userId && !session.historyHydrated) {
+        const stored = loadHistory(session.userId, MAX_HISTORY_ENTRIES);
+        session.history = stored.map((entry) => ({ role: entry.role, content: entry.content }));
+        session.historyHydrated = true;
+      }
 
       if (session.turnCount > TURN_LIMIT) {
         return {
@@ -445,6 +509,10 @@ export function createThrapApi(
         }
 
         recordExchange(session, userMessage, message);
+        if (session.userId) {
+          appendMessage(session.userId, "user", userMessage);
+          appendMessage(session.userId, "assistant", message);
+        }
 
         return {
           status: 200,
@@ -465,5 +533,5 @@ export function createThrapApi(
   };
 }
 
-export { getSession, createSessionId } from "./session";
+export { getSession, createSessionId, attachUser } from "./session";
 export { createRetriever };

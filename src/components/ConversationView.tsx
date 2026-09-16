@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import type { Citation, TurnState } from "../api/types";
+import type { VoiceGender } from "../App";
+import { useAmbientMusic } from "../hooks/useAmbientMusic";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { useSpeechSynthesis } from "../hooks/useSpeechSynthesis";
 import type { AppCopy } from "../app/i18n";
+
+function avatarSrc(gender: VoiceGender): string {
+  return gender === "male" ? "/avatar-man.svg" : "/avatar-woman.svg";
+}
 
 export interface ConversationMessage {
   id: string;
@@ -31,17 +37,24 @@ interface ConversationViewProps {
   isTyping: boolean;
   copy: AppCopy;
   identifiedProcessing: boolean;
+  voiceGender?: VoiceGender;
+  onVoiceGenderChange?: (gender: VoiceGender) => void;
 }
 
-export function ConversationView({ messages, turn, onSubmit, onShortcut, disabled, isTyping, copy, identifiedProcessing }: ConversationViewProps) {
+export function ConversationView({
+  messages, turn, onSubmit, onShortcut, disabled, isTyping, copy, identifiedProcessing,
+  voiceGender, onVoiceGenderChange,
+}: ConversationViewProps) {
   const remaining = Math.max(turn.limit - turn.used, 0);
 
   const [draft, setDraft] = useState("");
   const [readAloud, setReadAloud] = useState(false);
 
   const speech = useSpeechRecognition();
-  const voice = useSpeechSynthesis();
+  const voice = useSpeechSynthesis(voiceGender);
+  const music = useAmbientMusic();
   const listening = speech.status === "listening";
+  const avatar = avatarSrc(voice.voiceGender);
 
   // Text already in the composer when dictation began, so speech appends to it
   // rather than replacing what the person typed.
@@ -157,7 +170,11 @@ export function ConversationView({ messages, turn, onSubmit, onShortcut, disable
                     </a>
                   </div>
                 )}
-                <p className="message__meta">{message.author === "user" ? copy.user : "Thrap"}</p>
+                <p className="message__meta">
+                  {message.author === "user"
+                    ? copy.user
+                    : <img className="meta-avatar" src={avatar} alt="Thrap" width={18} height={18} />}
+                </p>
               </article>
             ))}
             {isTyping && (
@@ -167,7 +184,7 @@ export function ConversationView({ messages, turn, onSubmit, onShortcut, disable
                   <span className="typing-dot" />
                   <span className="typing-dot" />
                 </div>
-                <p className="message__meta">Thrap</p>
+                <p className="message__meta"><img className="meta-avatar" src={avatar} alt="" width={18} height={18} /></p>
               </div>
             )}
           </div>
@@ -228,16 +245,28 @@ export function ConversationView({ messages, turn, onSubmit, onShortcut, disable
 
           <div className="composer-footer">
             <p className="composer-hint">{copy.crisisHint}</p>
-            {voice.supported && (
-              <button
-                className="text-button text-button--sm"
-                type="button"
-                onClick={toggleReadAloud}
-                aria-pressed={readAloud}
-              >
-                {readAloud ? copy.readAloudOn : copy.readAloudOff}
-              </button>
-            )}
+            <div className="composer-footer-actions">
+              {music.supported && (
+                <button
+                  className="text-button text-button--sm"
+                  type="button"
+                  onClick={music.toggle}
+                  aria-pressed={music.playing}
+                >
+                  {music.playing ? copy.musicOn : copy.musicOff}
+                </button>
+              )}
+              {voice.supported && (
+                <button
+                  className="text-button text-button--sm"
+                  type="button"
+                  onClick={toggleReadAloud}
+                  aria-pressed={readAloud}
+                >
+                  {readAloud ? copy.readAloudOn : copy.readAloudOff}
+                </button>
+              )}
+            </div>
           </div>
 
               {voice.supported && readAloud && (
@@ -246,7 +275,11 @@ export function ConversationView({ messages, turn, onSubmit, onShortcut, disable
                   <select
                     id="read-aloud-voice"
                     value={voice.voiceGender}
-                    onChange={(event) => voice.setVoiceGender(event.target.value as "female" | "male")}
+                    onChange={(event) => {
+                      const next = event.target.value as VoiceGender;
+                      voice.setVoiceGender(next);
+                      onVoiceGenderChange?.(next);
+                    }}
                   >
                     <option value="female">{copy.femaleVoice}</option>
                     <option value="male">{copy.maleVoice}</option>
