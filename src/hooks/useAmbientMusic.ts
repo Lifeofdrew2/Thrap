@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
- * Optional healing-piano-over-a-water-fountain ambience played during a
- * conversation - an original piece synthesised with the Web Audio API in
- * that genre, not a copy of any existing recording.
+ * Optional healing-piano ambience played during a conversation - an
+ * original piece synthesised with the Web Audio API in that genre, not a
+ * copy of any existing recording.
  *
  * Synthesised entirely locally rather than an audio file or embed: no
  * licensed track to clear, nothing fetched from a third party, and it keeps
@@ -26,8 +26,6 @@ const SCALE_HZ = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25];
 interface AmbientNodes {
   master: GainNode;
   delay: DelayNode;
-  waterSource: AudioBufferSourceNode;
-  dropletTimeoutId: number;
   noteTimeoutId: number;
   currentNoteGain: GainNode | null;
 }
@@ -46,10 +44,8 @@ export function useAmbientMusic(): AmbientMusicState {
     const context = contextRef.current;
     if (nodes && context) {
       window.clearTimeout(nodes.noteTimeoutId);
-      window.clearTimeout(nodes.dropletTimeoutId);
       nodes.currentNoteGain?.gain.cancelScheduledValues(context.currentTime);
       nodes.currentNoteGain?.gain.linearRampToValueAtTime(0, context.currentTime + 0.2);
-      nodes.waterSource.stop(context.currentTime + 0.3);
     }
     nodesRef.current = null;
     window.setTimeout(() => void context?.close(), 400);
@@ -62,8 +58,8 @@ export function useAmbientMusic(): AmbientMusicState {
     const Ctor = (window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext);
     const context = new Ctor();
 
-    // A soft hall reverb shared by both the piano and the water bed, the way
-    // a real recording space would tie the two together.
+    // A soft hall reverb, the way a real recording space would give the
+    // piano some air rather than sounding close and dry.
     const master = context.createGain();
     master.gain.value = 0.5;
     master.connect(context.destination);
@@ -79,70 +75,12 @@ export function useAmbientMusic(): AmbientMusicState {
     delay.connect(wet);
     wet.connect(master);
 
-    // --- Water fountain bed: a continuous soft trickle, plus discrete
-    // droplet blips scheduled at random intervals - the two textures that
-    // together read as running water rather than plain noise.
-    const streamBuffer = context.createBuffer(1, context.sampleRate * 2, context.sampleRate);
-    const streamData = streamBuffer.getChannelData(0);
-    for (let i = 0; i < streamData.length; i++) streamData[i] = Math.random() * 2 - 1;
-
-    const waterSource = context.createBufferSource();
-    waterSource.buffer = streamBuffer;
-    waterSource.loop = true;
-    const streamFilter = context.createBiquadFilter();
-    streamFilter.type = "bandpass";
-    streamFilter.frequency.value = 1400;
-    streamFilter.Q.value = 0.6;
-    const streamGain = context.createGain();
-    streamGain.gain.value = 0.05;
-    waterSource.connect(streamFilter);
-    streamFilter.connect(streamGain);
-    streamGain.connect(master);
-    waterSource.start();
-
-    const dropletBuffer = context.createBuffer(1, context.sampleRate * 0.15, context.sampleRate);
-    const dropletData = dropletBuffer.getChannelData(0);
-    for (let i = 0; i < dropletData.length; i++) dropletData[i] = Math.random() * 2 - 1;
-
     contextRef.current = context;
-    nodesRef.current = {
-      master, delay, waterSource, dropletTimeoutId: 0, noteTimeoutId: 0, currentNoteGain: null,
-    };
+    nodesRef.current = { master, delay, noteTimeoutId: 0, currentNoteGain: null };
     setPlaying(true);
 
-    playNextDroplet(context, master, dropletBuffer);
     playNextNote(context, master, delay);
   }, [supported]);
-
-  function playNextDroplet(context: AudioContext, master: GainNode, dropletBuffer: AudioBuffer) {
-    if (contextRef.current !== context) return;
-
-    const now = context.currentTime;
-    const droplet = context.createBufferSource();
-    droplet.buffer = dropletBuffer;
-    droplet.playbackRate.value = 1.6 + Math.random() * 1.2;
-
-    const dropletFilter = context.createBiquadFilter();
-    dropletFilter.type = "bandpass";
-    dropletFilter.frequency.value = 1800 + Math.random() * 2200;
-    dropletFilter.Q.value = 4;
-
-    const dropletGain = context.createGain();
-    dropletGain.gain.value = 0;
-    droplet.connect(dropletFilter);
-    dropletFilter.connect(dropletGain);
-    dropletGain.connect(master);
-
-    dropletGain.gain.linearRampToValueAtTime(0.05 + Math.random() * 0.03, now + 0.008);
-    dropletGain.gain.exponentialRampToValueAtTime(0.0005, now + 0.18);
-
-    droplet.start(now);
-    droplet.stop(now + 0.2);
-
-    const nextDelay = 350 + Math.random() * 900;
-    const dropletTimeoutId = window.setTimeout(() => playNextDroplet(context, master, dropletBuffer), nextDelay);
-    if (nodesRef.current) nodesRef.current.dropletTimeoutId = dropletTimeoutId;
-  }
 
   function playNextNote(context: AudioContext, master: GainNode, delay: DelayNode) {
     if (contextRef.current !== context) return;
