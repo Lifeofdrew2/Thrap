@@ -124,15 +124,34 @@ function containsUnsafeOutput(message: string): boolean {
   return UNSAFE_OUTPUT_SIGNALS.some((signal) => signal.test(message));
 }
 
-function hasTranslatedShape(source: unknown, translated: unknown): boolean {
-  if (typeof source === "string") return typeof translated === "string" && translated.length > 0;
-  if (!source || typeof source !== "object" || !translated || typeof translated !== "object") return false;
-
-  const sourceRecord = source as Record<string, unknown>;
-  const translatedRecord = translated as Record<string, unknown>;
-  return Object.keys(sourceRecord).every(
-    (key) => key in translatedRecord && hasTranslatedShape(sourceRecord[key], translatedRecord[key]),
-  );
+/**
+ * Rebuilds the copy object shape from `source` (the English original),
+ * taking each leaf from `translated` when it is present and looks like a
+ * real translation, and falling back to the English original leaf-by-leaf
+ * otherwise.
+ *
+ * A single dropped or malformed key from the model must not throw away an
+ * otherwise-good translation of the other ~90 keys: that all-or-nothing
+ * behaviour was the main reason language selection felt unreliable - a
+ * translation that was 95% complete was being discarded entirely instead of
+ * shown as a translation with one or two English leftovers.
+ */
+function mergeTranslatedShape(source: unknown, translated: unknown): unknown {
+  if (typeof source === "string") {
+    return typeof translated === "string" && translated.trim().length > 0 ? translated : source;
+  }
+  if (source && typeof source === "object" && !Array.isArray(source)) {
+    const sourceRecord = source as Record<string, unknown>;
+    const translatedRecord = translated && typeof translated === "object" && !Array.isArray(translated)
+      ? (translated as Record<string, unknown>)
+      : {};
+    const merged: Record<string, unknown> = {};
+    for (const key of Object.keys(sourceRecord)) {
+      merged[key] = mergeTranslatedShape(sourceRecord[key], translatedRecord[key]);
+    }
+    return merged;
+  }
+  return source;
 }
 
 function parseModelJson(raw: string): unknown {
@@ -379,25 +398,33 @@ export function createThrapApi(
       const cached = translatedUiCopy.get(cacheKey);
       if (cached) return { status: 200, body: { copy: cached } };
 
-      try {
-        const raw = await callChatModel(
-          config.apiKey,
-          config.model,
-          `Translate the supplied Thrap interface copy into ${parsed.data.languageName} (ISO 639-3 code: ${parsed.data.languageCode}). For Ibo specifically, use standard modern Ibo (Asusu Ibo), not Yoruba, Hausa, Nigerian Pidgin, or English. Return JSON only, preserving exactly the same keys and nested structure. Translate every user-facing string naturally and completely. Do not translate proper nouns such as Thrap, preserve placeholders, and do not add or remove keys. This is interface copy for a mental health service, so keep privacy, consent, crisis, and safety wording accurate and respectful.`,
-          [],
-          JSON.stringify(parsed.data.copy),
-          8000,
-        );
-        const translated = parseModelJson(raw);
-        if (!hasTranslatedShape(parsed.data.copy, translated)) {
-          return { status: 502, body: { error: "invalid_translation" } };
+      // Automatic translation on language choice only feels reliable if an
+      // occasional malformed model response doesn't sink the whole request:
+      // retry once before giving up, on top of the leaf-level merge below.
+      const TRANSLATE_ATTEMPTS = 2;
+      let lastError: unknown;
+
+      for (let attempt = 0; attempt < TRANSLATE_ATTEMPTS; attempt++) {
+        try {
+          const raw = await callChatModel(
+            config.apiKey,
+            config.model,
+            `Translate the supplied Thrap interface copy into ${parsed.data.languageName} (ISO 639-3 code: ${parsed.data.languageCode}). For Ibo specifically, use standard modern Ibo (Asusu Ibo), not Yoruba, Hausa, Nigerian Pidgin, or English. Return JSON only - no markdown code fences, no commentary before or after it - preserving exactly the same keys and nested structure as the input. Translate every user-facing string naturally and completely; do not skip, merge, or omit any key. Do not translate proper nouns such as Thrap, preserve placeholders, and do not add or remove keys. This is interface copy for a mental health service, so keep privacy, consent, crisis, and safety wording accurate and respectful.`,
+            [],
+            JSON.stringify(parsed.data.copy),
+            8000,
+          );
+          const translated = parseModelJson(raw);
+          const merged = mergeTranslatedShape(parsed.data.copy, translated) as Record<string, unknown>;
+          translatedUiCopy.set(cacheKey, merged);
+          return { status: 200, body: { copy: merged } };
+        } catch (error) {
+          lastError = error;
         }
-        translatedUiCopy.set(cacheKey, translated as Record<string, unknown>);
-        return { status: 200, body: { copy: translated } };
-      } catch (error) {
-        console.error("[Thrap] UI translation failed:", error instanceof Error ? error.message : error);
-        return { status: 502, body: { error: "translation_failure" } };
       }
+
+      console.error("[Thrap] UI translation failed:", lastError instanceof Error ? lastError.message : lastError);
+      return { status: 502, body: { error: "translation_failure" } };
     },
 
     clear(sessionId) {

@@ -1,7 +1,13 @@
 import type { AppCopy } from "../app/i18n";
 import { ServiceRequestError } from "./errors";
 
-const REQUEST_TIMEOUT_MS = 15_000;
+// Translating the ~90-key interface copy in one call is a genuinely slower
+// request than a normal chat turn, especially cold (no server-side cache
+// entry yet) for a less common language. A short timeout here was the main
+// cause of language selection "silently" falling back to English: the
+// server would still finish and cache the translation a few seconds later,
+// but the client had already given up and shown the English fallback.
+const REQUEST_TIMEOUT_MS = 45_000;
 const CACHE_PREFIX = "thrap-ui-copy:v3:";
 const pendingTranslations = new Map<string, Promise<AppCopy>>();
 
