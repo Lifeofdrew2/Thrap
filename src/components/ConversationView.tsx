@@ -4,6 +4,7 @@ import type { VoiceGender } from "../App";
 import { useAmbientMusic } from "../hooks/useAmbientMusic";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { useSpeechSynthesis } from "../hooks/useSpeechSynthesis";
+import { ShortcutIcon } from "./ShortcutIcons";
 import type { AppCopy } from "../app/i18n";
 
 function avatarSrc(gender: VoiceGender): string {
@@ -18,14 +19,14 @@ export interface ConversationMessage {
   bookingPrompt?: boolean;
 }
 
-const SHORTCUTS: { icon: string; label: string; desc: string; intent: string }[] = [
-  { icon: "💬", label: "I need to talk",       desc: "Share what's on your mind",         intent: "TALK_THROUGH" },
-  { icon: "😰", label: "Feeling anxious",       desc: "Explore anxiety and stress",        intent: "ANXIETY" },
-  { icon: "😔", label: "Feeling low",           desc: "Talk about low mood or sadness",    intent: "LOW_MOOD" },
-  { icon: "🕯️", label: "Loss or grief",          desc: "Talk about someone or something you've lost", intent: "GRIEF" },
-  { icon: "🔋", label: "Burnout & work stress", desc: "Workplace pressure and exhaustion", intent: "BURNOUT" },
-  { icon: "😴", label: "Sleep & rest",          desc: "Trouble sleeping or recovering",    intent: "SLEEP" },
-  { icon: "🤝", label: "Talk to a counsellor",  desc: "Connect with a professional now",   intent: "BOOK_COUNSELLOR" },
+const SHORTCUTS: { label: string; desc: string; intent: string }[] = [
+  { label: "I need to talk",       desc: "Share what's on your mind",         intent: "TALK_THROUGH" },
+  { label: "Feeling anxious",       desc: "Explore anxiety and stress",        intent: "ANXIETY" },
+  { label: "Feeling low",           desc: "Talk about low mood or sadness",    intent: "LOW_MOOD" },
+  { label: "Loss or grief",          desc: "Talk about someone or something you've lost", intent: "GRIEF" },
+  { label: "Burnout & work stress", desc: "Workplace pressure and exhaustion", intent: "BURNOUT" },
+  { label: "Sleep & rest",          desc: "Trouble sleeping or recovering",    intent: "SLEEP" },
+  { label: "Talk to a counsellor",  desc: "Connect with a professional now",   intent: "BOOK_COUNSELLOR" },
 ];
 
 interface ConversationViewProps {
@@ -125,7 +126,7 @@ export function ConversationView({
         <>
           <p className="shortcut-intro">{copy.shortcutIntro}</p>
           <div className="shortcut-grid" aria-label="Conversation starters">
-            {SHORTCUTS.map(({ icon, intent }) => (
+            {SHORTCUTS.map(({ intent }) => (
               <button
                 className="shortcut"
                 type="button"
@@ -133,7 +134,7 @@ export function ConversationView({
                 onClick={() => onShortcut(intent)}
                 disabled={disabled}
               >
-                <span className="shortcut-icon" aria-hidden="true">{icon}</span>
+                <span className="shortcut-icon"><ShortcutIcon intent={intent} /></span>
                 <span className="shortcut-label">{copy.shortcuts[intent].label}</span>
                 <span className="shortcut-desc">{copy.shortcuts[intent].desc}</span>
               </button>

@@ -487,8 +487,8 @@ h1 {
 .shortcut:disabled { cursor: wait; opacity: 0.5; }
 
 .shortcut-icon {
-  font-size: 1.25rem;
-  line-height: 1;
+  display: inline-flex;
+  color: var(--sage-600);
 }
 
 .shortcut-label {
