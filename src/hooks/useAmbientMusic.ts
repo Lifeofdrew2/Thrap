@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
- * Optional bamboo-flute-style meditation loop played during a conversation.
+ * Optional healing-piano-over-a-water-fountain ambience played during a
+ * conversation - an original piece synthesised with the Web Audio API in
+ * that genre, not a copy of any existing recording.
  *
- * Synthesised entirely with the Web Audio API rather than an audio file: no
- * licensed track to clear, nothing to fetch, and it keeps working offline.
- * Off by default, for the same reason read-aloud defaults off (see
- * useSpeechSynthesis.ts) - ambient audio playing unexpectedly is a disclosure
- * risk in a shared office, so it is switched on deliberately every time
- * rather than remembered, the same as most browsers block unattended
- * autoplay anyway.
+ * Synthesised entirely locally rather than an audio file or embed: no
+ * licensed track to clear, nothing fetched from a third party, and it keeps
+ * working offline. Off by default, for the same reason read-aloud defaults
+ * off (see useSpeechSynthesis.ts) - ambient audio playing unexpectedly is a
+ * disclosure risk in a shared office, so it is switched on deliberately
+ * every time rather than remembered, the same as most browsers block
+ * unattended autoplay anyway.
  */
 
 export interface AmbientMusicState {
@@ -18,13 +20,14 @@ export interface AmbientMusicState {
   toggle(): void;
 }
 
-/** D pentatonic, the scale most bamboo-flute meditation pieces wander over. */
-const SCALE_HZ = [293.66, 349.23, 392.0, 440.0, 523.25, 587.33]; // D4 F4 G4 A4 C5 D5
+/** C major pentatonic across two octaves - the warm, unresolved-tension scale most healing-piano pieces sit in. */
+const SCALE_HZ = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25];
 
-interface FluteNodes {
+interface AmbientNodes {
   master: GainNode;
   delay: DelayNode;
-  noiseBuffer: AudioBuffer;
+  waterSource: AudioBufferSourceNode;
+  dropletTimeoutId: number;
   noteTimeoutId: number;
   currentNoteGain: GainNode | null;
 }
@@ -32,8 +35,8 @@ interface FluteNodes {
 export function useAmbientMusic(): AmbientMusicState {
   const [playing, setPlaying] = useState(false);
   const contextRef = useRef<AudioContext | null>(null);
-  const nodesRef = useRef<FluteNodes | null>(null);
-  const scaleIndexRef = useRef(2);
+  const nodesRef = useRef<AmbientNodes | null>(null);
+  const scaleIndexRef = useRef(3);
   const supported = typeof window !== "undefined" && (
     "AudioContext" in window || "webkitAudioContext" in (window as unknown as Record<string, unknown>)
   );
@@ -43,12 +46,13 @@ export function useAmbientMusic(): AmbientMusicState {
     const context = contextRef.current;
     if (nodes && context) {
       window.clearTimeout(nodes.noteTimeoutId);
-      // Fade the note in flight quickly rather than cutting it off sharply.
+      window.clearTimeout(nodes.dropletTimeoutId);
       nodes.currentNoteGain?.gain.cancelScheduledValues(context.currentTime);
       nodes.currentNoteGain?.gain.linearRampToValueAtTime(0, context.currentTime + 0.2);
+      nodes.waterSource.stop(context.currentTime + 0.3);
     }
     nodesRef.current = null;
-    window.setTimeout(() => void context?.close(), 250);
+    window.setTimeout(() => void context?.close(), 400);
     contextRef.current = null;
     setPlaying(false);
   }, []);
@@ -58,114 +62,152 @@ export function useAmbientMusic(): AmbientMusicState {
     const Ctor = (window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext);
     const context = new Ctor();
 
-    // A short feedback delay stands in for the soft hall reverb that bamboo
-    // flute meditation recordings are almost always mixed with.
+    // A soft hall reverb shared by both the piano and the water bed, the way
+    // a real recording space would tie the two together.
     const master = context.createGain();
     master.gain.value = 0.5;
     master.connect(context.destination);
 
     const delay = context.createDelay(1);
-    delay.delayTime.value = 0.32;
+    delay.delayTime.value = 0.3;
     const feedback = context.createGain();
-    feedback.gain.value = 0.35;
+    feedback.gain.value = 0.3;
     const wet = context.createGain();
-    wet.gain.value = 0.55;
+    wet.gain.value = 0.5;
     delay.connect(feedback);
     feedback.connect(delay);
     delay.connect(wet);
     wet.connect(master);
 
-    // A short buffer of white noise, reused for every note's soft breath
-    // attack rather than allocated fresh each time.
-    const noiseBuffer = context.createBuffer(1, context.sampleRate * 0.2, context.sampleRate);
-    const noiseData = noiseBuffer.getChannelData(0);
-    for (let i = 0; i < noiseData.length; i++) noiseData[i] = Math.random() * 2 - 1;
+    // --- Water fountain bed: a continuous soft trickle, plus discrete
+    // droplet blips scheduled at random intervals - the two textures that
+    // together read as running water rather than plain noise.
+    const streamBuffer = context.createBuffer(1, context.sampleRate * 2, context.sampleRate);
+    const streamData = streamBuffer.getChannelData(0);
+    for (let i = 0; i < streamData.length; i++) streamData[i] = Math.random() * 2 - 1;
+
+    const waterSource = context.createBufferSource();
+    waterSource.buffer = streamBuffer;
+    waterSource.loop = true;
+    const streamFilter = context.createBiquadFilter();
+    streamFilter.type = "bandpass";
+    streamFilter.frequency.value = 1400;
+    streamFilter.Q.value = 0.6;
+    const streamGain = context.createGain();
+    streamGain.gain.value = 0.05;
+    waterSource.connect(streamFilter);
+    streamFilter.connect(streamGain);
+    streamGain.connect(master);
+    waterSource.start();
+
+    const dropletBuffer = context.createBuffer(1, context.sampleRate * 0.15, context.sampleRate);
+    const dropletData = dropletBuffer.getChannelData(0);
+    for (let i = 0; i < dropletData.length; i++) dropletData[i] = Math.random() * 2 - 1;
 
     contextRef.current = context;
-    nodesRef.current = { master, delay, noiseBuffer, noteTimeoutId: 0, currentNoteGain: null };
+    nodesRef.current = {
+      master, delay, waterSource, dropletTimeoutId: 0, noteTimeoutId: 0, currentNoteGain: null,
+    };
     setPlaying(true);
 
-    playNextNote(context, master, delay, noiseBuffer);
+    playNextDroplet(context, master, dropletBuffer);
+    playNextNote(context, master, delay);
   }, [supported]);
 
-  function playNextNote(context: AudioContext, master: GainNode, delay: DelayNode, noiseBuffer: AudioBuffer) {
+  function playNextDroplet(context: AudioContext, master: GainNode, dropletBuffer: AudioBuffer) {
     if (contextRef.current !== context) return;
 
-    // A gentle random walk across the scale reads as an unhurried melodic
-    // phrase rather than either a fixed tune or fully random noodling.
-    const step = Math.random() < 0.7 ? (Math.random() < 0.5 ? -1 : 1) : (Math.random() < 0.5 ? -2 : 2);
+    const now = context.currentTime;
+    const droplet = context.createBufferSource();
+    droplet.buffer = dropletBuffer;
+    droplet.playbackRate.value = 1.6 + Math.random() * 1.2;
+
+    const dropletFilter = context.createBiquadFilter();
+    dropletFilter.type = "bandpass";
+    dropletFilter.frequency.value = 1800 + Math.random() * 2200;
+    dropletFilter.Q.value = 4;
+
+    const dropletGain = context.createGain();
+    dropletGain.gain.value = 0;
+    droplet.connect(dropletFilter);
+    dropletFilter.connect(dropletGain);
+    dropletGain.connect(master);
+
+    dropletGain.gain.linearRampToValueAtTime(0.05 + Math.random() * 0.03, now + 0.008);
+    dropletGain.gain.exponentialRampToValueAtTime(0.0005, now + 0.18);
+
+    droplet.start(now);
+    droplet.stop(now + 0.2);
+
+    const nextDelay = 350 + Math.random() * 900;
+    const dropletTimeoutId = window.setTimeout(() => playNextDroplet(context, master, dropletBuffer), nextDelay);
+    if (nodesRef.current) nodesRef.current.dropletTimeoutId = dropletTimeoutId;
+  }
+
+  function playNextNote(context: AudioContext, master: GainNode, delay: DelayNode) {
+    if (contextRef.current !== context) return;
+
+    // A gentle random walk across the scale, sparse rather than a running
+    // arpeggio - healing piano pieces leave a lot of silence between notes.
+    const step = Math.random() < 0.65 ? (Math.random() < 0.5 ? -1 : 1) : (Math.random() < 0.5 ? -2 : 2);
     scaleIndexRef.current = Math.min(SCALE_HZ.length - 1, Math.max(0, scaleIndexRef.current + step));
     const frequency = SCALE_HZ[scaleIndexRef.current];
 
     const now = context.currentTime;
-    const duration = 1.3 + Math.random() * 1.6;
-    const gap = 0.5 + Math.random() * 1.2;
+    const gap = 1.8 + Math.random() * 2.8;
 
-    // The tone itself: a sine core for breath warmth plus a faint triangle
-    // overtone, both under a slow vibrato - the wavering pitch is what makes
-    // a synthesised tone read as a blown flute rather than an electronic pad.
-    const tone = context.createOscillator();
-    tone.type = "sine";
-    tone.frequency.value = frequency;
+    // A struck-string tone: fundamental plus two quiet overtones, brightest
+    // at the attack and mellowing as it decays, under a fast pluck envelope
+    // rather than the slow swell a breath instrument would use.
+    const fundamental = context.createOscillator();
+    fundamental.type = "triangle";
+    fundamental.frequency.value = frequency;
 
-    const overtone = context.createOscillator();
-    overtone.type = "triangle";
-    overtone.frequency.value = frequency * 2;
-    const overtoneGain = context.createGain();
-    overtoneGain.gain.value = 0.06;
-    overtone.connect(overtoneGain);
+    const overtone2 = context.createOscillator();
+    overtone2.type = "sine";
+    overtone2.frequency.value = frequency * 2;
+    const overtone2Gain = context.createGain();
+    overtone2Gain.gain.value = 0.18;
 
-    const vibrato = context.createOscillator();
-    vibrato.type = "sine";
-    vibrato.frequency.value = 4.5 + Math.random() * 0.8;
-    const vibratoDepth = context.createGain();
-    vibratoDepth.gain.value = frequency * 0.008;
-    vibrato.connect(vibratoDepth);
-    vibratoDepth.connect(tone.frequency);
-    vibratoDepth.connect(overtone.frequency);
+    const overtone3 = context.createOscillator();
+    overtone3.type = "sine";
+    overtone3.frequency.value = frequency * 3;
+    const overtone3Gain = context.createGain();
+    overtone3Gain.gain.value = 0.07;
+
+    const toneFilter = context.createBiquadFilter();
+    toneFilter.type = "lowpass";
+    toneFilter.frequency.setValueAtTime(3200, now);
+    toneFilter.frequency.exponentialRampToValueAtTime(700, now + 3.5);
+
+    fundamental.connect(toneFilter);
+    overtone2.connect(overtone2Gain);
+    overtone2Gain.connect(toneFilter);
+    overtone3.connect(overtone3Gain);
+    overtone3Gain.connect(toneFilter);
 
     const noteGain = context.createGain();
     noteGain.gain.value = 0;
-    tone.connect(noteGain);
-    overtoneGain.connect(noteGain);
+    toneFilter.connect(noteGain);
     noteGain.connect(master);
     noteGain.connect(delay);
 
-    // Soft attack and release, like a breath swelling in and fading out,
-    // rather than a hard-edged synthesiser envelope.
-    const peak = 0.11 + Math.random() * 0.03;
-    noteGain.gain.linearRampToValueAtTime(peak, now + 0.35);
-    noteGain.gain.linearRampToValueAtTime(peak * 0.85, now + duration * 0.6);
-    noteGain.gain.linearRampToValueAtTime(0, now + duration);
+    const peak = 0.14 + Math.random() * 0.04;
+    noteGain.gain.setValueAtTime(0, now);
+    noteGain.gain.linearRampToValueAtTime(peak, now + 0.012);
+    noteGain.gain.setTargetAtTime(0.0001, now + 0.02, 1.1);
 
-    // A brief filtered noise "chiff" under the attack, the airy edge of a
-    // real flute's blown onset.
-    const breath = context.createBufferSource();
-    breath.buffer = noiseBuffer;
-    const breathFilter = context.createBiquadFilter();
-    breathFilter.type = "highpass";
-    breathFilter.frequency.value = 2500;
-    const breathGain = context.createGain();
-    breathGain.gain.value = 0.02;
-    breath.connect(breathFilter);
-    breathFilter.connect(breathGain);
-    breathGain.connect(master);
-
-    tone.start(now);
-    overtone.start(now);
-    vibrato.start(now);
-    breath.start(now);
-    tone.stop(now + duration + 0.05);
-    overtone.stop(now + duration + 0.05);
-    vibrato.stop(now + duration + 0.05);
-    breath.stop(now + 0.2);
+    const duration = 4.5;
+    fundamental.start(now);
+    overtone2.start(now);
+    overtone3.start(now);
+    fundamental.stop(now + duration);
+    overtone2.stop(now + duration);
+    overtone3.stop(now + duration);
 
     if (nodesRef.current) nodesRef.current.currentNoteGain = noteGain;
 
-    const noteTimeoutId = window.setTimeout(
-      () => playNextNote(context, master, delay, noiseBuffer),
-      (duration + gap) * 1000,
-    );
+    const noteTimeoutId = window.setTimeout(() => playNextNote(context, master, delay), gap * 1000);
     if (nodesRef.current) nodesRef.current.noteTimeoutId = noteTimeoutId;
   }
 
