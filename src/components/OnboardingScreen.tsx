@@ -30,10 +30,6 @@ export function OnboardingScreen({ onAcknowledge, onLanguageChange, copy, transl
           <p>{copy.whatThisIsNotBody}</p>
         </div>
         <div className="onboarding-card">
-          <h2>{copy.yourPrivacy}</h2>
-          <p>{copy.yourPrivacyBody}</p>
-        </div>
-        <div className="onboarding-card">
           <h2>{copy.urgentHelp}</h2>
           <p>{copy.urgentHelpBody}</p>
         </div>
@@ -78,7 +74,6 @@ export function OnboardingScreen({ onAcknowledge, onLanguageChange, copy, transl
       <section className="onboarding-privacy" aria-labelledby="privacy-choice-heading">
         <p className="eyebrow">{copy.consentEyebrow}</p>
         <h2 id="privacy-choice-heading">{copy.consentHeading}</h2>
-        <p className="consent-body">{copy.consentBody}</p>
         <div className="choice-row">
           <button className={!identified ? "primary-button" : "secondary-button"} type="button" onClick={() => setIdentified(false)} aria-pressed={!identified}>
             {copy.anonymous}

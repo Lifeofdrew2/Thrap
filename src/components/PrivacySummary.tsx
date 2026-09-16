@@ -16,14 +16,18 @@ export function PrivacySummary({ onClose, onBack, copy }: PrivacySummaryProps) {
       <h1 id="privacy-heading">{copy.privacyHeading}</h1>
       <div className="privacy-body">
         <p>
-          <strong>Anonymous sessions</strong> are never stored as identifiable conversations. Nothing
-          you type is saved on this device. Your conversation content is not shared with analytics
-          or third-party services.
+          <strong>Anonymous sessions</strong> are never stored anywhere. Nothing you type is saved on
+          this device, on our server, or with any analytics or third-party service. Closing the tab
+          or clearing the session erases the conversation completely, because it was never written
+          down in the first place.
         </p>
         <p>
-          Identified support is optional. If you choose a future booking or follow-up route, the app
-          will explain what details are needed before collecting anything. Human-support links open
-          an external phone or organisation-approved route.
+          <strong>Identified support</strong> is optional, and you choose it yourself by creating an
+          account. If you do, your conversation is saved so you can pick it up again later, from any
+          device — but only you can see it: it lives behind your own password, which is never stored
+          in readable form, only as a one-way security hash. We do not share it with analytics,
+          advertisers, or anyone else. Logging out ends your signed-in session on that device; your
+          account and its history stay exactly as you left them for next time.
         </p>
         <p>
           <strong>Escalation records</strong> contain only the minimum information needed for a

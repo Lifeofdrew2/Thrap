@@ -103,7 +103,21 @@ function promptLanguage(region: Region = "NG", language: ConversationLanguage = 
   if (region === "NG" && language === "eng") {
     return "The user prefers Nigerian English. Reply in clear, warm Nigerian workplace English with natural local phrasing where appropriate. Do not imitate or exaggerate errors, and keep safety instructions unmistakably clear.";
   }
-  return `Selected language: ${languageName} (${language}). This language choice is authoritative. Always reply in this selected language even if the user writes in another language, unless they explicitly ask to switch. All generated text must use the selected language. Preserve names, numbers, dates, technical terms, proper nouns, safety wording, and approved service names accurately. Use natural native phrasing, not literal translation, and keep safety instructions unmistakably clear.`;
+  return `Selected language: ${languageName} (${language}). This is the ONLY language you may write in. Do not answer in English and do not answer in Nigerian Pidgin, even though the shortcut prompts or app scaffolding you see may be written in English - that English text describes a topic, it is not a request to reply in English. Switch away from ${languageName} only if the user's own latest typed message is itself written in a different language than ${languageName}; in that case, and only that case, reply in the language they just used. Preserve names, numbers, dates, technical terms, proper nouns, safety wording, and approved service names accurately. Use natural native phrasing, not literal translation, and keep safety instructions unmistakably clear. Before answering, silently check: is every sentence I am about to write actually in ${languageName}? If not, rewrite it so that it is.`;
+}
+
+/**
+ * A short reminder appended to the outgoing user turn only (never stored or
+ * displayed). Models weight the most recent text more heavily than an
+ * earlier system instruction, and a shortcut's English topic label in the
+ * visible "user" turn (e.g. "I'm experiencing burnout and work stress.") can
+ * otherwise pull a reply back into English even with a system-level
+ * language policy already in place.
+ */
+function languageReminder(region: Region = "NG", language: ConversationLanguage = "eng", languageName = "English"): string {
+  if (language === "pcm" && region === "NG") return "(Reply in Nigerian Pidgin.)";
+  if (region === "NG" && language === "eng") return "(Reply in Nigerian English.)";
+  return `(Reply only in ${languageName}. Not English, not Pidgin, unless this exact message is itself written in another language.)`;
 }
 
 function containsUnsafeOutput(message: string): boolean {
@@ -471,7 +485,8 @@ export function createThrapApi(
             : `${THERAPY_SYSTEM_PROMPT}\n\n${promptLanguage(input.region, input.language, input.languageName)}`;
 
           const rawReply = await callChatModel(
-            config.apiKey, config.model, systemInstruction, session.history, userMessage,
+            config.apiKey, config.model, systemInstruction, session.history,
+            `${userMessage}\n\n${languageReminder(input.region, input.language, input.languageName)}`,
           );
 
           const grounded = extractCitations(rawReply, results);

@@ -75,7 +75,7 @@ describe("App framing", () => {
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 
     expect(await screen.findByRole("heading", { name: "How are you feeling today?" })).toBeInTheDocument();
-    expect(screen.getByText(/Identified support is allowed only/i)).toBeInTheDocument();
+    expect(screen.getByText(/signed in, so this conversation is saved/i)).toBeInTheDocument();
   });
 
   it("requires country and language before starting", () => {

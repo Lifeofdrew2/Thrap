@@ -8,8 +8,6 @@ export interface AppCopy {
   whatYouCanDoBody: string;
   whatThisIsNot: string;
   whatThisIsNotBody: string;
-  yourPrivacy: string;
-  yourPrivacyBody: string;
   urgentHelp: string;
   urgentHelpBody: string;
   important: string;
@@ -94,8 +92,6 @@ const ENGLISH_COPY: AppCopy = {
   whatYouCanDoBody: "Talk about how you're feeling, explore stressful situations, find coping strategies, and get connected to professional support.",
   whatThisIsNot: "What this is not",
   whatThisIsNotBody: "This is not a licensed therapist or crisis service. It cannot diagnose, prescribe, or replace professional mental health care.",
-  yourPrivacy: "Your privacy",
-  yourPrivacyBody: "Your conversation is not stored on this device. You can use this service anonymously.",
   urgentHelp: "When to seek urgent help",
   urgentHelpBody: "If you're in immediate danger or crisis, please contact emergency services or your organisation's duty counsellor now.",
   important: "Important:",
@@ -111,13 +107,13 @@ const ENGLISH_COPY: AppCopy = {
   clearSession: "Clear session",
   consentEyebrow: "Privacy choice",
   consentHeading: "Choose your privacy",
-  consentBody: "Anonymous is the default. Identified support is optional and only applies if you later choose a booking or follow-up route.",
+  consentBody: "Anonymous is the default: nothing you say is saved anywhere, by anyone. Identified support is optional — it saves your conversation to your own password-protected account, visible only to you, so you can continue where you left off later.",
   identified: "Allow identified support",
   anonymous: "Stay anonymous",
   back: "Back",
   privacyNote: "Read the privacy summary for full details before choosing.",
   anonymousModeNote: "This session is anonymous. We will not ask for your name, email, phone number, or other identifying details.",
-  identifiedModeNote: "Identified support is allowed only for a future booking or follow-up step. We are not collecting your details now.",
+  identifiedModeNote: "You're signed in, so this conversation is saved securely to your account — visible only to you — and will be here next time you log in.",
   privacyEyebrow: "Privacy summary",
   privacyHeading: "What happens to your information",
   returnToSession: "Return to session",
@@ -189,8 +185,6 @@ const PIDGIN_COPY: AppCopy = {
   whatYouCanDoBody: "Talk about how you dey feel, explore things wey dey stress you, find ways to cope, and connect with professional support.",
   whatThisIsNot: "Wetin this no be",
   whatThisIsNotBody: "This no be licensed therapist or crisis service. E no fit diagnose, prescribe, or replace professional mental health care.",
-  yourPrivacy: "Your privacy",
-  yourPrivacyBody: "Your conversation no dey stay for this device. You fit use this service anonymous.",
   urgentHelp: "When you need urgent help",
   urgentHelpBody: "If you dey immediate danger or crisis, abeg contact emergency services or your organisation duty counsellor now.",
   important: "Important:",
@@ -206,13 +200,13 @@ const PIDGIN_COPY: AppCopy = {
   clearSession: "Clear session",
   consentEyebrow: "Privacy choice",
   consentHeading: "Choose your privacy",
-  consentBody: "Anonymous na the default. Identified support na optional and e only apply if you later choose booking or follow-up route.",
+  consentBody: "Anonymous na the default: nothing wey you talk go save anywhere, by anybody. Identified support na optional - e go save your conversation to your own password-protected account, na only you fit see am, so you fit continue where you stop later.",
   identified: "Allow identified support",
   anonymous: "Stay anonymous",
   back: "Go back",
   privacyNote: "Read the privacy summary before you choose.",
   anonymousModeNote: "This session anonymous. We no go ask for your name, email, phone number, or other identifying details.",
-  identifiedModeNote: "Identified support dey allowed only for future booking or follow-up step. We no dey collect your details now.",
+  identifiedModeNote: "You dey sign in, so this conversation go save well-well to your account - na only you fit see am - and e go dey wait for you next time you log in.",
   privacyEyebrow: "Privacy summary",
   privacyHeading: "Wetin dey happen to your information",
   returnToSession: "Go back to session",
