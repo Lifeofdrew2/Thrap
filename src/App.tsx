@@ -288,7 +288,7 @@ export function App() {
         />
       )}
 
-      {(stage === "ready" || terminalView) && (
+      {stage === "ready" && !terminalView && (
         <button className="clear-session" type="button" onClick={clearSession} disabled={submitting}>
           {copy.clearSession}
         </button>
