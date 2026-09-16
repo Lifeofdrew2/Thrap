@@ -27,6 +27,16 @@ describe("navigation safety and context", () => {
     expect(result.body).toMatchObject({ kind: "escalation", reasonCode: "crisis" });
   });
 
+  it.each([
+    "Omo I dey third mainland bridge to jump like",
+    "I wan jump inside the lagoon",
+    "I fit throw myself off the bridge",
+  ])("escalates a named jumping site plus intent, even without the word suicide: %s", async (message) => {
+    const result = await api.navigate({ message, region: "NG", language: "pcm", languageName: "Nigerian Pidgin" }, getSession(crypto.randomUUID()));
+
+    expect(result.body).toMatchObject({ kind: "escalation", reasonCode: "crisis" });
+  });
+
   it("accepts only supported regional context", () => {
     expect(parseNavigationInput({ region: "NG", language: "pcm", languageName: "Nigerian Pidgin" })).toEqual({
       region: "NG",

@@ -57,6 +57,15 @@ const CRISIS_SIGNALS = [
   "i wan die", "i want die", "make i die", "i no wan live", "i no want live",
   "life no worth am", "life no get meaning", "i don tire for life",
   "everything don finish", "i go kill myself", "i fit kill myself",
+  // Method/location-specific disclosures. A named jumping site plus intent
+  // language is unambiguous even without any of the phrases above, and
+  // Third Mainland Bridge specifically is a well-documented Lagos site for
+  // this - it must never depend on the model recognising it.
+  "third mainland bridge", "mainland bridge", "jump off the bridge",
+  "jump off a bridge", "jump inside the bridge", "jump inside the lagoon",
+  "jump into the lagoon", "throw myself off", "throw myself into",
+  "wan jump", "want to jump", "feel like jumping", "jump like",
+  "wan throw myself", "want to throw myself",
 ];
 
 const UNSAFE_OUTPUT_SIGNALS = [

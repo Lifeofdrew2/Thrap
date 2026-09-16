@@ -78,6 +78,11 @@ export const handlers = [
       "don't want to be here", "not worth living", "no reason to live", "can't go on",
       "i wan die", "i want die", "make i die", "i no wan live", "life no worth am",
       "i don tire for life", "everything don finish", "i go kill myself",
+      "third mainland bridge", "mainland bridge", "jump off the bridge",
+      "jump off a bridge", "jump inside the bridge", "jump inside the lagoon",
+      "jump into the lagoon", "throw myself off", "throw myself into",
+      "wan jump", "want to jump", "feel like jumping", "jump like",
+      "wan throw myself", "want to throw myself",
     ];
     if (crisisSignals.some((s) => text.includes(s))) {
       return HttpResponse.json({
