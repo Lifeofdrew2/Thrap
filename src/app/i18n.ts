@@ -172,8 +172,8 @@ const ENGLISH_COPY: AppCopy = {
   authErrorNetwork: "Couldn't reach the service. Check your connection and try again.",
   loggedInAs: "Signed in as",
   logOut: "Log out",
-  musicOn: "Turn off calming music",
-  musicOff: "Play calming music",
+  musicOn: "Turn off bamboo flute meditation music",
+  musicOff: "Play bamboo flute meditation music",
 };
 
 const PIDGIN_COPY: AppCopy = {
@@ -265,8 +265,8 @@ const PIDGIN_COPY: AppCopy = {
   authErrorNetwork: "We no fit reach the service. Check your connection and try again.",
   loggedInAs: "You dey sign in as",
   logOut: "Log out",
-  musicOn: "Turn off calming music",
-  musicOff: "Play calming music",
+  musicOn: "Turn off bamboo flute meditation music",
+  musicOff: "Play bamboo flute meditation music",
 };
 
 export function getAppCopy(language: ConversationLanguage): AppCopy {
