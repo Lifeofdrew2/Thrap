@@ -77,7 +77,7 @@ const INTENT_TO_MESSAGE: Record<string, string> = {
   GRIEF:            "I've experienced a loss and would like to talk about it.",
 };
 
-const TURN_LIMIT = 20;
+const TURN_LIMIT = 30;
 const BOOKING_TOKEN = "[RECOMMEND_BOOKING]";
 
 const FALLBACK_RESPONSES = [

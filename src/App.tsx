@@ -44,7 +44,7 @@ export function App() {
   const [terminal, setTerminal] = useState<EscalationResponse | null>(null);
   const [terminalCanGoBack, setTerminalCanGoBack] = useState(false);
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
-  const [turn, setTurn] = useState<TurnState>({ used: 0, limit: 20 });
+  const [turn, setTurn] = useState<TurnState>({ used: 0, limit: 30 });
   const [turnLimitRoute, setTurnLimitRoute] = useState<EscalationResponse["humanRoute"] | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -185,7 +185,7 @@ export function App() {
     setTerminal(null);
     setTurnLimitRoute(null);
     setMessages([]);
-    setTurn({ used: 0, limit: 20 });
+    setTurn({ used: 0, limit: 30 });
     setIsTyping(false);
   }
 
