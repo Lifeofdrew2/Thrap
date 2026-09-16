@@ -90,7 +90,9 @@ export function App() {
     setLanguageName(nextLanguageName);
     const localCopy = getAppCopy(nextLanguage);
     setCopy(localCopy);
-    if (nextLanguage === "eng" || nextLanguage === "pcm") {
+    // These have full hand-written copy (see i18n.ts) rather than needing a
+    // live model translation, so there is nothing further to wait for.
+    if (["eng", "pcm", "ibo", "yor", "hau"].includes(nextLanguage)) {
       setTranslationLoading(false);
       return;
     }
