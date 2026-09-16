@@ -214,11 +214,7 @@ export function App() {
       <header className="app-header">
         <div className="header-brand">
           <span className="header-logo-wrap">
-            <img
-              className="header-logo header-avatar"
-              src={voiceGender === "male" ? "/avatar-man.svg" : "/avatar-woman.svg"}
-              alt="Thrap"
-            />
+            <img className="header-logo" src="/logo-transparent.png" alt="Thrap" />
           </span>
         </div>
         <div className="header-actions">

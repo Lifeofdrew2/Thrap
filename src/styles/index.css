@@ -97,13 +97,6 @@ p { line-height: 1.65; }
   object-position: top center;
 }
 
-.header-avatar {
-  width: 3rem;
-  height: 3rem;
-  border-radius: 50%;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-}
-
 .header-account {
   font-size: 0.8rem;
   color: var(--stone-500);
